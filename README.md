@@ -22,6 +22,7 @@
 [![contact_Mail](https://img.shields.io/badge/✉️_Email-FF6600?style=flat&logoColor=white)](mailto:easynode@kerlann.org)
 [![GitHub-page](https://img.shields.io/badge/Page--FR-FF6600?style=flat&logo=github&logoColor=white)](https://easynode.kerlann.org/fr.html)
 [![Monero-ecosystem](https://img.shields.io/badge/🧭_Monero.eco-FF6600?style=flat&logoColor=white)](https://monero.eco/infrastructure/)
+[![Bank-Exit](https://img.shields.io/badge/🇫🇷_Bank_Exit-FF6600?style=flat&logoColor=white)](https://bank-exit.org/tutoriels/monero-node-easymonerod)
 
 
 <div align="center"><img src="picture/banniere5.svg" width="900" height="100" alt="Monero EasyNode top"></div>
@@ -108,7 +109,7 @@ This script is designed **for dedicated Monero node PCs with Monero_Gui** and ma
 
 | Version | Links |
 |---------|------|
-| 🪟 WSL | [![WSL](https://img.shields.io/badge/Download-EasyNode_WSL-orange?style=for-the-badge)](https://github.com/kerlannXmr/EasyMonerod/releases/download/v4/easynode_wsl.sh) |
+| 🪟 WSL | [![WSL](https://img.shields.io/badge/Download-EasyNode_WSL-orange?style=for-the-badge)](https://github.com/kerlannXmr/easynode_windows/releases/download/v4/easynode_wsl.sh) |
 </div>
 
 ## <div align="center">🚀 Installation</div>
@@ -147,8 +148,15 @@ learn.microsoft.com/en-us/windows/wsl/install
 ### ⚫ 3) Download & Install <b>script</b> : 
 /home/$user
 
+- ⚡Beginner users: copy&paste in new terminal
+
 ```bash
-sudo wget -P ~ https://github.com/kerlannXmr/EasyMonerod/releases/download/v4/easynode_wsl.sh
+wget https://github.com/kerlannXmr/easynode_windows/releases/download/v4/easynode_wsl.sh -O easynode_linux.sh && chmod +x easynode_linux.sh && sudo ./easynode_linux.sh
+```
+- Normal user
+
+```bash
+sudo wget -P ~ https://github.com/kerlannXmr/easynode_windows/releases/download/v4/easynode_wsl.sh
 ```
 Make it executable
 ```bash
@@ -309,7 +317,6 @@ Audits are performed using VirusTotal and MetaDefender.
 
 | Script | VirusTotal | MetaDefender |
 |--------|------------|--------------|
-| EasyNode_linux | [![Scan EasyNode_linux with VirusTotal](https://img.shields.io/badge/scan%20Easynode_linux%20with-VirusTotal-brightgreen)](https://www.virustotal.com/gui/url/f647e9bd7a152cab3537fe5130d7b57c6112cec021c73c35403fb6936d0b625c?nocache=1) | [![Scan EasyNode_linux with MetaDefender](https://img.shields.io/badge/scan%20Easynode_linux%20with-MetaDefender-brightgreen)](https://metadefender.com/results/url/aHR0cHM6Ly9naXRodWIuY29tL2tlcmxhbm5YbXIvRWFzeU1vbmVyb2QvcmVsZWFzZXMvZG93bmxvYWQvdjMvZWFzeW5vZGVfbGludXguc2g=) |
 | EasyNode_wsl | [![Scan easyNode_wsl with VirusTotal](https://img.shields.io/badge/scan%20Easynode_wsl%20with-VirusTotal-brightgreen)](https://www.virustotal.com/gui/url/e1621216f4ef4f9a5a1aa0651d1717b9c4047473d9b040cc047341369df3cb46?nocache=1) | [![Scan EasyNode_wsl with Metadefender](https://img.shields.io/badge/scan%20Easynode_wsl%20with-metaDefender-brightgreen)](https://metadefender.com/results/url/aHR0cHM6Ly9naXRodWIuY29tL2tlcmxhbm5YbXIvRWFzeU1vbmVyb2QvcmVsZWFzZXMvZG93bmxvYWQvdjMvZWFzeW5vZGVfd3NsLnNo) |
 
 </div>
@@ -350,7 +357,7 @@ Audits are performed using VirusTotal and MetaDefender.
 <div align="center">
 
 ---
-### 🙏 <b>Make donnation with 'cake wallet' to : ' kerlann.xmr '</b>🙏
+###  <b>Make donnation with 'cake wallet' to : ' kerlann.xmr '</b>
 <div align="center"><img src="picture/qrcode1.gif"  alt="wsl Interface"></div>
 or fundraiser
 
