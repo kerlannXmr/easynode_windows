@@ -248,24 +248,13 @@ Because FAT doesn't handle files larger than 4 GB!  [👉Issue](https://github.c
 
 ### Security Scan Results
 
-Audits are performed using VirusTotal and MetaDefender.
 
-| Category | Description | Tools | Status |
-|----------|-------------|-------|--------|
-| 🔒 Security | Vulnerabilities, malware detection, backdoors | VirusTotal, MetaDefender | ✅ |
-| 🐛 Code Issues | Logic flaws, syntax errors, risky patterns | Static Analysis | ✅ |
-| 🔍 Behavior | Runtime actions, system modifications, network activity | Dynamic Analysis | ✅ |
-| 🔧 Resource Usage | File system access, memory/CPU utilization | MetaDefender | ✅ |
-| 📡 Network | Suspicious connections, data exfiltration attempts | VirusTotal | ✅ |
-| 💾 File Operations | Dangerous file manipulations, unexpected changes | Both Tools | ✅ |
-
-<br>
   
  <b>Right click + "Open in new tab" to view scann results </b>
+| Script | Jotti.org | MetaDefender | virscan |
+|--------|------------|--------------|--------------|
+| EasyNode_wsl | [![Scan EasyNode_linux with JOTTI.ORG](https://img.shields.io/badge/scan%20Easynode_wsl%20with-Jotti.org-brightgreen)](https://virusscan.jotti.org/en-US/filescanjob/g2cclgh3qj) | [![Scan EasyNode_linux with MetaDefender](https://img.shields.io/badge/scan%20Easynode_wsl%20with-MetaDefender-brightgreen)](https://metadefender.com/results/url/aHR0cHM6Ly9naXRodWIuY29tL2tlcmxhbm5YbXIvZWFzeW5vZGVfd2luZG93cy9yZWxlYXNlcy9kb3dubG9hZC92NC9lYXN5bm9kZV93c2wuc2g=) | [![Scan EasyNode_linux with VirScan](https://img.shields.io/badge/scan%20Easynode_wsl%20with-VirScan-brightgreen)](https://www.virscan.org/report/9fe00be0043c5d0f266d13319e14738f567b9fd4b920fe37ad1d7210b04389b0)
 
-| Script | VirusTotal | MetaDefender |
-|--------|------------|--------------|
-| EasyNode_wsl | [![Scan easyNode_wsl with VirusTotal](https://img.shields.io/badge/scan%20Easynode_wsl%20with-VirusTotal-brightgreen)](https://www.virustotal.com/gui/url/e1621216f4ef4f9a5a1aa0651d1717b9c4047473d9b040cc047341369df3cb46?nocache=1) | [![Scan EasyNode_wsl with Metadefender](https://img.shields.io/badge/scan%20Easynode_wsl%20with-metaDefender-brightgreen)](https://metadefender.com/results/url/aHR0cHM6Ly9naXRodWIuY29tL2tlcmxhbm5YbXIvRWFzeU1vbmVyb2QvcmVsZWFzZXMvZG93bmxvYWQvdjMvZWFzeW5vZGVfd3NsLnNo) |
 
 </div>
 
