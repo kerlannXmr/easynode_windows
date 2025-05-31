@@ -105,10 +105,13 @@ This script is designed **for dedicated Monero node PCs with Monero_Gui** and ma
 3️⃣ Option 3: Install Tor
 4️⃣ Option 4: Configure bitmonero
 5️⃣ Option 5: Anonymous DNS
-6️⃣ Option 6: Start blockchain
-6️⃣ Option 7: Stop blockchain
+   ├── Choice: Internal disk (direct)
+   │   └── 6️⃣ Option 6: Start blockchain
+   └── Choice: External disk (setup first)
+       └── 8️⃣ Option 8: External disk → 6️⃣ Option 6: Start blockchain
+7️⃣ Option 7: Stop blockchain
 8️⃣ Option 8: External disk 
-9️⃣ Option 9: Return to internal disk 
+9️⃣ Option 9: Return to internal disk
 ```
 
 ## <div align="center">📥 Download:</div>
