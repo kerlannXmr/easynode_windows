@@ -41,7 +41,7 @@
 </div>
 
 <hr style="border-top: 3px solid orange;">
-<b>'EasyNode'</b> simplifies the installation of a <b> 'MONERO node' </b> , allowing you to configure your blockchain in just a few clicks. A complete setup in less than 10 minutes!
+<b>'EasyNode'</b> simplifies the installation of a <b> 'MONERO node' </b> , allowing you to configure your blockchain in just a few clicks. A complete setup in less than 10 minutes! (inclued 0.18.4.1 Monero CLI and officiel Hash verification)
 
 Then download its blockchain ⬇️ ...
 
