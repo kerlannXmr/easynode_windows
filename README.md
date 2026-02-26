@@ -9,9 +9,9 @@
   <a href="https://github.com/kerlannXmr/easynode_windows">
     <img src="https://img.shields.io/badge/WINDOWS-Version-FF6600?style=for-the-badge&logo=windows&logoColor=white" alt="Version WSL"/>
   </a>
-  <a href="https://github.com/kerlannXmr/EasyMonerod/">
-    <img src="https://img.shields.io/badge/Linux-Version-4F4F9F?style=for-the-badge&logo=linux&logoColor=white" alt="Version Linux"/>
-  </a>
+  <a href="https://github.com/kerlannXmr/EasyMonerod/tree/main/gui">
+    <img src="https://img.shields.io/badge/GUI-Version-8546?style=for-the-badge&logo=windows&logoColor=white" alt="Version linux GUI"/>
+  </a> 
       </td>
     </tr>
   </table>
