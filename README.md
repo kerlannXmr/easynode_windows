@@ -4,11 +4,9 @@
       <td align="center"  width="400">
         <h3>WINDOWS VERSION</h3>
         <h3>Would you like a Linux version?</h3>
-        <h4>See the <a href="https://github.com/kerlannXmr/EasyMonerod">Linux version</a> of this project</h4>
+        <h4>See the <a href="https://github.com/kerlannXmr/EasyMonerod">GUI version</a> of this project</h4>
          <p>🔄change version </p>
-  <a href="https://github.com/kerlannXmr/easynode_windows">
-    <img src="https://img.shields.io/badge/WINDOWS-Version-FF6600?style=for-the-badge&logo=windows&logoColor=white" alt="Version WSL"/>
-  </a>
+  
   <a href="https://github.com/kerlannXmr/EasyMonerod/tree/main/gui">
     <img src="https://img.shields.io/badge/GUI-Version-8546?style=for-the-badge&logo=windows&logoColor=white" alt="Version linux GUI"/>
   </a> 
