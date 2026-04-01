@@ -124,7 +124,7 @@ This script is designed **for dedicated Monero node PCs with Monero_Gui** and ma
 
 | Version | Links |
 |---------|------|
-| 🪟 WSL | [![WSL](https://img.shields.io/badge/Download-EasyNode_WSL-orange?style=for-the-badge)](https://github.com/kerlannXmr/easynode_windows/releases/download/v4/easynode_wsl.sh) |
+| 🪟 WSL | [![WSL](https://img.shields.io/badge/Download-EasyNode_WSL-orange?style=for-the-badge)](https://github.com/kerlannXmr/easynode_windows/releases/download/v5/easynode_wsl.sh) |
 </div>
 
 ## <div align="center">🚀 Installation</div>
@@ -166,12 +166,12 @@ learn.microsoft.com/en-us/windows/wsl/install
 - ⚡Beginner users: copy&paste in new terminal
 
 ```bash
-wget https://github.com/kerlannXmr/easynode_windows/releases/download/v4/easynode_wsl.sh -O easynode_linux.sh && chmod +x easynode_linux.sh && sudo ./easynode_linux.sh
+wget https://github.com/kerlannXmr/easynode_windows/releases/download/v5/easynode_wsl.sh -O easynode_linux.sh && chmod +x easynode_linux.sh && sudo ./easynode_linux.sh
 ```
 - Normal user
 
 ```bash
-sudo wget -P ~ https://github.com/kerlannXmr/easynode_windows/releases/download/v4/easynode_wsl.sh
+sudo wget -P ~ https://github.com/kerlannXmr/easynode_windows/releases/download/v5/easynode_wsl.sh
 ```
 Make it executable
 ```bash
