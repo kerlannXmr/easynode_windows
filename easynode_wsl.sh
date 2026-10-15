@@ -1,0 +1,2259 @@
+#!/bin/bash
+
+exec 2> >(grep -v "unable to resolve host" >&2)
+
+# Définition des couleurs et du style avec une palette plus professionnelle
+declare -A COLORS=(
+    ["PRIMARY"]='\033[38;5;255m'     # Blanc
+    ["SUCCESS"]='\033[38;5;71m'     # Vert apaisant
+    ["WARNING"]='\033[38;5;184m'    # Jaune doux
+    ["ERROR"]='\033[38;5;167m'      # Rouge atténué
+    ["INFO"]='\033[38;5;74m'        # Bleu clair
+    ["HEADER"]='\033[38;5;140m'     # Violet clair pour les titres
+    ["BG"]='\033[48;5;16m'           # Fond noir (modifié)
+    ["RESET"]='\033[0m'             # Reset
+    ["TITLE"]='\033[38;5;208m'      # Orange pour les titres
+    ["GRIS"]='\033[38;5;245m'        # GRIS
+)
+
+# Variables globales
+USERNAME=""
+LANG_CHOICE=""
+BLOCKCHAIN_TYPE=""
+MONERO_VERSION="0.18.5.3"
+CURRENT_MOUNT_POINT=""
+export LANG_CHOICE=""
+
+# Fonction pour dessiner la bannière
+draw_banner() {
+    echo -e "${COLORS[TITLE]}"
+    echo "  *     *   ***   *   * ***** ****   ***   "
+    echo "  **   **  *   *  **  * *     *   * *   *  "
+    echo "  * * * * *     * * * * ****  ****  *   *  "
+    echo "  *  *  * *     * *  ** *     * *   *   *  "
+    echo "  *     *  *   *  *   * *     *  *  *   *  "
+    echo "  *     *   ***   *   * ***** *   *  ***   "
+    echo "  ═════════════ ▌EASYNODE▐ ══════════Wsl2 "
+    #echo " ════════════ EASYNODE ═══════════v1.wsl   "
+    echo -e "${COLORS[RESET]}"
+}
+
+# Configuration du terminal
+setup_terminal() {
+    echo -e "${COLORS[BG]}"
+    clear
+    printf '\033]11;#1a1a1a\007'
+    draw_banner
+}
+
+# Fonction d'affichage stylisé
+print_styled() {
+    local style=$1
+    local message=$2
+    echo -e "${COLORS[$style]}${message}${COLORS[RESET]}"
+}
+
+# Messages d'information
+info() { print_styled "INFO" "ℹ $1"; }
+error() { print_styled "ERROR" "✖ $1"; }
+warning() { print_styled "WARNING" "⚠ $1"; }
+success() { print_styled "SUCCESS" "✓ $1"; }
+
+# Fonction pour afficher les en-têtes
+print_header() {
+    local message=$1
+    #clear
+    setup_terminal
+    echo -e "\n"
+    echo -e "${COLORS[TITLE]}"
+    echo "═══════════════════════════════════════════════════"
+    printf "%*s%s%*s\n" $(((50-${#message})/2)) "" "$message" $(((49-${#message})/2)) ""
+    echo "═══════════════════════════════════════════════════"
+    echo -e "${COLORS[RESET]}"
+    echo
+}
+
+
+# Fonction pour obtenir les messages selon la langue
+get_message() {
+    local fr_msg=$1
+    local en_msg=$2
+    if [ "$LANG_CHOICE" = "FR" ]; then
+        echo "$fr_msg"
+    else
+        echo "$en_msg"
+    fi
+}
+
+# Sélection de la langue
+select_language() {
+    #clear
+    setup_terminal
+    echo -e "\n\n"
+    print_header "LANGUAGE SELECTION / CHOIX DE LA LANGUE"
+    
+    while true; do
+        print_styled "PRIMARY" "1) Français"
+        print_styled "PRIMARY" "2) English"
+        echo -n "$(print_styled "TITLE" "Choose/Choisissez (1-2): ")"
+        read -r lang_choice
+        case $lang_choice in
+            1) LANG_CHOICE="FR"; break ;;
+            2) LANG_CHOICE="EN"; break ;;
+            *) error "Invalid choice / Choix invalide" ;;
+        esac
+    done
+}
+#######
+#manuel
+ Manuel() {
+   clear
+   setup_terminal
+   echo -e "\n\n\n\n\n\n\n\n"  # Espace pour la bannière
+   print_header "$(get_message "GUIDE" "HOW TO")"
+    
+   print_styled "TITLE" "$(get_message "Pour une installation complète, suivez ces étapes dans l'ordre:" "For a complete installation, follow these steps in order:")"
+   echo
+   
+   print_styled "SUCCESS" "$(get_message "  >Commencer par le N°1) et continuer dans l'ordre 2),3),4) jusqu'au N°5)." "  >Start with Number 1) and continue in order 2),3),4) until Number 5.)")"
+   echo
+   print_styled "SUCCESS" "$(get_message "  >Puis faire le 6) si vous souhaitez démarrer sur le disque interne." "  >Then do 6) if you want to boot on the internal disk.")"
+   echo
+   print_styled "SUCCESS" "$(get_message "  >Ou faite le 8) si vous déplacez le noeud vers un disque externe puis 6) pour démarrer." "  >Or do 8) if you want to move the node to an external disk then again 6) to start.")"
+   echo
+   print_styled "TITLE" "$(get_message "═══════════════════════════════════════════════════" "═══════════════════════════════════════════════════")"
+   print_styled "TITLE" "$(get_message "                   AUTRES" "                     OTHER")"
+   print_styled "TITLE" "$(get_message "═══════════════════════════════════════════════════" "═══════════════════════════════════════════════════")"
+   echo
+   print_styled "GRIS" "$(get_message "  >Le N°6) Démarre le Noeud et introduit l'exclusion des 'IP bans listées'." "  >N°6 Start the Node and introduce the exclusion of the 'listed IP bans'.")"
+   echo
+   print_styled "GRIS" "$(get_message "  >Le N°9) Sert à démonter la blockchain du disque externe," "  >N°9) Is used to unmount the blockchain from the external disk,")"
+   print_styled "GRIS" "$(get_message "   si vous souhaitez retournez vers le disque interne. puis faire le 6) pour démarrer." "   if you wish return on internal disk, then do 6) to start to the internal disk.")"
+   echo
+   print_styled "GRIS" "$(get_message "  >Le N°4 sert aussi de DEBUG du chemin de demarrage vers le disque interne." "  >N°4) Also serves as DEBUG of the boot path ti internal disk.")"
+   echo
+   print_styled "PRIMARY" "$(get_message "   CTRL+C 1 seule fois pour arreter la Blockchain et revenir au menu." "   CTRL+C 1 time only to stop the Blockchain and return to the menu.")"
+   echo
+   print_styled "WARNING" "$(get_message "⚠️ Important: REDIRIGER le port 22 et 18080 de votre Box internet" "⚠️ Important: REDIRECT port 22 and 18080 from your internet router")"
+   print_styled "WARNING" "$(get_message "  vers l'adresse 'ip local' de votre PC" "   to your 'local ip' of your PC")"
+   echo
+    read -p "$(print_styled "PRIMARY" "$(get_message "Appuyez sur Entrée pour revenir au menu..." "Press Enter to return to menu...")")"
+}
+#######
+fix_hostname_resolution() {
+    # Récupérer le nom d'hôte actuel
+    local current_hostname=$(hostname)
+    
+    # Vérifier si le hostname est déjà dans /etc/hosts
+    if ! grep -q "127.0.1.1.*$current_hostname" /etc/hosts; then
+        info "$(get_message "Correction de la résolution du nom d'hôte..." "Fixing hostname resolution...")"
+        
+        # Sauvegarder le fichier hosts original
+        sudo cp /etc/hosts /etc/hosts.bak
+        
+        # Ajouter le hostname au fichier hosts
+        echo "127.0.1.1 $current_hostname" | sudo tee -a /etc/hosts > /dev/null
+        success "$(get_message "Nom d'hôte ajouté au fichier hosts" "Hostname added to hosts file")"
+    fi
+}
+#mise à jour systeme
+update_system() {
+    print_header "$(get_message "MISE À JOUR DU SYSTÈME" "SYSTEM UPDATE")"
+    
+# Vérification WSL2 
+    info "$(get_message "Vérification de la version WSL..." "Checking WSL version...")"
+    if ! grep -q "WSL2" /proc/version; then
+        warning "$(get_message "WSL2 n'est pas détecté. Tentative de mise à jour automatique..." "WSL2 not detected. Attempting automatic update...")"
+        
+        # Obtenir le nom de la distribution actuelle
+        DISTRO_NAME=$(wslpath -w ~ | cut -d'\' -f3)
+        
+        # Tentative de conversion vers WSL2
+        info "$(get_message "Tentative de conversion vers WSL2..." "Attempting to convert to WSL2...")"
+        powershell.exe -c "wsl --set-version $DISTRO_NAME 2" >/dev/null 2>&1
+
+        if [ $? -eq 0 ]; then
+            success "$(get_message "Conversion vers WSL2 réussie" "Successfully converted to WSL2")"
+            info "$(get_message "Redémarrage de WSL nécessaire" "WSL restart required")"
+            
+            echo -n "$(print_styled "PRIMARY" "$(get_message "Voulez-vous redémarrer WSL maintenant ? (o/n): " "Do you want to restart WSL now? (y/n): ")")"
+            read -r response
+            case $response in
+                [OoYy]*)
+                    info "$(get_message "Redémarrage de WSL..." "Restarting WSL...")"
+                    powershell.exe -c "wsl --shutdown" >/dev/null 2>&1
+                    error "$(get_message "Veuillez relancer le script" "Please restart the script")"
+                    exit 0
+                    ;;
+                *)
+                    warning "$(get_message "Le redémarrage de WSL sera nécessaire plus tard" "WSL restart will be needed later")"
+                    ;;
+            esac
+        else
+            error "$(get_message "La conversion automatique a échoué" "Automatic conversion failed")"
+            warning "$(get_message "Vérifiez que la virtualisation est activée dans le BIOS" "Check if virtualization is enabled in BIOS")"
+            warning "$(get_message "Et que la 'Plateforme de machine virtuelle Windows' est activée" "And that 'Windows Virtual Machine Platform' is enabled")"
+            
+            echo -n "$(print_styled "PRIMARY" "$(get_message "Voulez-vous continuer avec WSL1 ? (o/n): " "Do you want to continue with WSL1? (y/n): ")")"
+            read -r response
+            case $response in
+                [OoYy]*)
+                    warning "$(get_message "Continuation avec WSL1..." "Continuing with WSL1...")"
+                    ;;
+                *)
+                    info "$(get_message "Script arrêté" "Script stopped")"
+                    exit 0
+                    ;;
+            esac
+        fi
+    else
+        success "$(get_message "WSL2 est détecté" "WSL2 detected")"
+    fi    
+
+    # Activation de systemd
+    info "$(get_message "Activation de systemd..." "Enabling systemd...")"
+    if [ ! -f /etc/wsl.conf ]; then
+        sudo tee /etc/wsl.conf > /dev/null << 'EOL'
+[boot]
+systemd=true
+
+[network]
+generateResolvConf=false
+
+EOL
+        success "$(get_message "Configuration de systemd ajoutée" "Systemd configuration added")"
+        warning "$(get_message "Redémarrage de WSL requis" "WSL restart required")"
+        warning "$(get_message "Utilisez 'wsl --shutdown' dans PowerShell après l'installation" "Use 'wsl --shutdown' in PowerShell after installation")"
+    else
+        if ! grep -q "systemd=true" /etc/wsl.conf; then
+            sudo sed -i '/\[boot\]/a systemd=true' /etc/wsl.conf || \
+            echo -e "[boot]\nsystemd=true" | sudo tee -a /etc/wsl.conf > /dev/null
+            success "$(get_message "Configuration de systemd ajoutée" "Systemd configuration added")"
+            warning "$(get_message "Redémarrage de WSL requis" "WSL restart required")"
+            warning "$(get_message "Utilisez 'wsl --shutdown' dans PowerShell après l'installation" "Use 'wsl --shutdown' in PowerShell after installation")"
+        else
+            info "$(get_message "systemd est déjà activé" "systemd is already enabled")"
+        fi
+    fi
+    
+    # Mise à jour initiale du système
+    info "$(get_message "Mise à jour initiale du système..." "Initial system update...")"
+    sudo apt update && sudo apt upgrade -y
+
+    # Outils système essentiels
+    info "$(get_message "Installation des outils système essentiels..." "Installing essential system tools...")"
+    sudo apt install -y \
+        build-essential \
+        software-properties-common \
+        apt-transport-https \
+        ca-certificates \
+        curl \
+        wget \
+        git \
+        gnupg \
+        lsb-release
+
+    # Outils de compression
+    info "$(get_message "Installation des outils de compression..." "Installing compression tools...")"
+    sudo apt install -y \
+        bzip2 \
+        libbz2-dev \
+        zip \
+        unzip \
+        tar \
+        gzip
+
+    # Outils réseau
+    info "$(get_message "Installation des outils réseau..." "Installing network tools...")"
+    sudo apt install -y \
+        net-tools \
+        openssh-server \
+        ufw \
+        fail2ban \
+        nmap \
+        tcpdump \
+        htop \
+        iftop \
+        iotop
+
+# Configuration du hostname
+local current_hostname=$(hostname)
+sudo hostnamectl set-hostname $current_hostname
+echo "127.0.0.1 localhost" | sudo tee /etc/hosts > /dev/null
+echo "127.0.1.1 $current_hostname" | sudo tee -a /etc/hosts > /dev/null
+echo "$current_hostname" | sudo tee /etc/hostname > /dev/null
+
+    # Activation et démarrage du service SSH       
+info "$(get_message "Configuration de SSH..." "Configuring SSH...")"
+sudo systemctl stop ssh.socket
+sudo systemctl disable ssh.socket
+sudo systemctl stop ssh
+sudo systemctl disable ssh
+sudo systemctl enable ssh
+sudo systemctl start ssh
+
+# Configuration de sshd_config
+info "$(get_message "Configuration du fichier SSH..." "Configuring SSH file...")"
+
+
+# Installation de SSH si non présent
+if ! command -v ssh &> /dev/null; then
+    info "$(get_message "Installation de SSH..." "Installing SSH...")"
+    sudo apt install -y openssh-server openssh-client
+fi
+
+# Configuration de sshd_config
+info "$(get_message "Configuration du fichier SSH..." "Configuring SSH file...")"
+echo "Port 22" | sudo tee /etc/ssh/sshd_config
+echo "ListenAddress 0.0.0.0" | sudo tee -a /etc/ssh/sshd_config
+echo "PasswordAuthentication yes" | sudo tee -a /etc/ssh/sshd_config
+
+
+# Configuration du hostname et hosts
+info "$(get_message "Configuration du hostname et hosts..." "Configuring hostname and hosts...")"
+
+# Modifier le fichier wsl.conf en préservant la configuration existante
+if [ ! -f /etc/wsl.conf ]; then
+    echo "[boot]" | sudo tee /etc/wsl.conf > /dev/null
+    echo "systemd=true" | sudo tee -a /etc/wsl.conf > /dev/null
+    echo "[network]" | sudo tee -a /etc/wsl.conf > /dev/null
+    echo "generateHosts = false" | sudo tee -a /etc/wsl.conf > /dev/null
+else
+    if ! grep -q "\[network\]" /etc/wsl.conf; then
+        echo "[network]" | sudo tee -a /etc/wsl.conf > /dev/null
+        echo "generateHosts = false" | sudo tee -a /etc/wsl.conf > /dev/null
+    fi
+fi
+
+# Créer un nouveau fichier hosts propre
+cat << EOF | sudo tee /etc/hosts > /dev/null
+127.0.0.1       localhost
+127.0.1.1       $CURRENT_HOSTNAME
+127.0.0.1       easynode
+$(hostname -I | cut -d' ' -f1) easynode
+
+# The following lines are desirable for IPv6 capable hosts
+::1     ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+EOF
+
+# Mettre à jour /etc/hostname
+echo "$HOSTNAME" | sudo tee /etc/hostname > /dev/null
+
+# S'assurer des bonnes permissions
+sudo chmod 644 /etc/hosts
+sudo chmod 644 /etc/hostname
+#######################
+
+sudo systemctl enable ssh
+sudo systemctl restart ssh
+
+
+# Configuration du message d'accueil SSH
+info "$(get_message "Configuration du message d'accueil SSH..." "Configuring SSH welcome message...")"
+####################
+
+####################
+# Créer le contenu du motd de manière dynamique
+HOSTNAME=$(hostname)
+IP_ADDRESS=$(hostname -I | cut -d' ' -f1)
+SYSTEM_INFO=$(uname -s)" "$(uname -r)
+
+# Utiliser echo -e pour interpréter les codes de couleur
+echo -e "\e[0;33;38;5;208m  *     *   ***   *   * ***** ****   ***   
+  **   **  *   *  **  * *     *   * *   *  
+  * * * * *     * * * * ****  ****  *   *  
+  *  *  * *     * *  ** *     * *   *   *  
+  *     *  *   *  *   * *     *  *  *   *  
+  *     *   ***   *   * ***** *   *  ***   
+  ═════════════ ▌EASYNODE▐ ══════════Wsl2\e[0m
+
+\e[0;33;38;5;208m    ▐ EASYNODE               EASYNODE▐ \e[0m
+
+\e[1;34mNode Status:\e[0m
+- Hostname: $HOSTNAME
+- IP Address: $IP_ADDRESS
+- Monero Version: $MONERO_VERSION
+- System: $SYSTEM_INFO
+
+\e[1;33mUseful Commands:\e[0m
+- monerod --help : Show Monero daemon help
+- monero-wallet-cli --help : Show wallet CLI help
+
+\e[1;31mImportant:\e[0m
+- Start monero: monerod
+- Stop  monero: CTRL+C
+- Check status: monerod status" | sudo tee /etc/motd > /dev/null
+####################
+# Vérification de l'état SSH
+if ! systemctl is-active ssh >/dev/null 2>&1; then
+    error "$(get_message "Échec du démarrage SSH" "SSH startup failed")"
+    journalctl -u ssh --no-pager -n 50
+fi
+
+    # Outils de développement Python (utile pour scripts)
+    info "$(get_message "Installation des outils Python..." "Installing Python tools...")"
+    sudo apt install -y \
+        python3 \
+        python3-pip \
+        python3-dev
+
+    # Éditeurs de texte
+    info "$(get_message "Installation des éditeurs..." "Installing text editors...")"
+    sudo apt install -y \
+        vim \
+        nano
+
+    # Configuration du pare-feu UFW
+    info "$(get_message "Configuration du pare-feu..." "Configuring firewall...")"
+    sudo ufw --force reset
+    sudo ufw disable
+    sudo ufw allow 22 #SSH
+    sudo ufw allow 80 #HTTP 
+    sudo ufw allow 443 #HTTPS
+    sudo ufw allow 9050
+    sudo ufw allow 18080:18090/tcp #MONERO PORT
+    sudo ufw allow 18080:18090/udp #MONERO PORT
+    sudo ufw allow 4200 #SHELL IN BOX
+    sudo ufw allow 4444 # i2p http
+    sudo ufw allow 4447 # i2p socks
+    sudo ufw allow 53317/tcp #localsend
+    sudo ufw allow 53317/udp #localsend  
+    sudo ufw --force enable
+    #détail des ports
+    #zmq_pub 18083
+    #tor_port 18084
+    #i2p_port 18085
+    #lws_port 18086
+    #monero_port 18080
+    #monero_public_port 18081
+    #monero_rpc_port 18081
+    #info "$(get_message "Configuration du pare-feu..." "Configuring firewall...")"
+    #sudo ufw default deny incoming
+    #sudo ufw default allow outgoing
+    #sudo ufw allow ssh
+    #sudo ufw allow 18080/tcp  # Port Monero P2P
+    #sudo ufw allow 18081/tcp  # Port Monero RPC
+    #sudo ufw --force enable
+
+    # Configuration de fail2ban
+    info "$(get_message "Configuration de fail2ban..." "Configuring fail2ban...")"
+    sudo systemctl enable fail2ban
+    sudo systemctl start fail2ban
+
+    # Nettoyage final
+    info "$(get_message "Nettoyage du système..." "System cleanup...")"
+    sudo apt autoremove -y
+    sudo apt clean
+
+    success "$(get_message "Mise à jour terminée" "Update completed")"
+    read -p "$(print_styled "PRIMARY" "$(get_message "Appuyez sur Entrée pour continuer..." "Press Enter to continue...")")"
+}
+
+# Sélection du type de blockchain
+
+
+select_blockchain_type() {
+    print_header "$(get_message "TYPE DE BLOCKCHAIN" "BLOCKCHAIN TYPE")"
+    
+    print_styled "PRIMARY" "$(get_message "1) Complète 200 Go" "1) Complete")"
+    print_styled "PRIMARY" "$(get_message "2) Élaguée (prune) 90 Go" "2) Pruned")"
+    echo -n "$(print_styled "INFO" "$(get_message "Choix (1-2): " "Choice (1-2): ")")"
+    read -r choice
+    
+    case $choice in
+        1) 
+            BLOCKCHAIN_TYPE="complete"
+            return 0 
+            ;;
+        2) 
+            BLOCKCHAIN_TYPE="pruned"
+            return 0 
+            ;;
+        *) 
+            error "$(get_message "Choix invalide" "Invalid choice")"
+            return 1 
+            ;;
+    esac
+}
+
+# Démarrage de la blockchain
+start_blockchain() {
+    # Appel discret de la fonction de réparation systemd
+    fix_systemd_services_auto
+
+    if [ -z "$USERNAME" ]; then
+        error "$(get_message "Nom d'utilisateur non défini" "Username not defined")"
+        return 1
+    fi
+
+    print_header "$(get_message "DÉMARRAGE DE LA BLOCKCHAIN" "STARTING BLOCKCHAIN")"
+    
+    # Vérification et réparation de Tor avant démarrage
+    print_styled "PRIMARY" "$(get_message "Vérification du service Tor avant démarrage" "Checking Tor service before startup")"
+    
+    print_styled "PRIMARY" "$(get_message "Appuyez sur Entrée pour continuer puis attendez" "Press Enter to continue then wait")"
+    read -r
+    
+    # Appel de la fonction de réparation Tor
+    fix_tor_service
+       
+    CONFIG_FILE="/home/$USERNAME/.bitmonero/bitmonero.conf"
+    DEFAULT_DATA_DIR="/home/$USERNAME/.bitmonero"
+    
+    # On vérifie d'abord le fichier de configuration
+    if [ -f "$CONFIG_FILE" ]; then
+        BLOCKCHAIN_LOCATION=$(grep "^data-dir=" "$CONFIG_FILE" 2>/dev/null | cut -d'=' -f2)
+    fi
+
+    # Si aucun emplacement n'est trouvé dans le fichier de config, on utilise l'emplacement par défaut
+    if [ -z "$BLOCKCHAIN_LOCATION" ]; then
+        BLOCKCHAIN_LOCATION="$DEFAULT_DATA_DIR"
+    fi
+
+    info "$(get_message "Emplacement de la blockchain: $BLOCKCHAIN_LOCATION" "Blockchain location: $BLOCKCHAIN_LOCATION")"
+    
+    # Vérification du montage du disque externe si nécessaire
+    if [ -n "$BLOCKCHAIN_LOCATION" ] && [[ "$BLOCKCHAIN_LOCATION" == "/media/$USERNAME"* ]]; then
+        DEVICE=$(mount | grep "/media/$USERNAME" | awk '{print $1}')
+        if [ -z "$DEVICE" ]; then
+            error "$(get_message "Le disque externe n'est pas monté" "External disk is not mounted")"
+            return 1
+        fi
+        info "$(get_message "Disque externe monté: $DEVICE" "External disk mounted: $DEVICE")"
+    fi
+
+    # Mise à jour du fichier de configuration selon le type de blockchain sélectionné
+    if [ -n "$BLOCKCHAIN_TYPE" ]; then
+        info "$(get_message "Mise à jour de la configuration pour le type de blockchain: $BLOCKCHAIN_TYPE" "Updating configuration for blockchain type: $BLOCKCHAIN_TYPE")"
+        
+        # Vérifier si le fichier de configuration existe
+        if [ ! -f "$CONFIG_FILE" ]; then
+            # Créer le fichier de configuration s'il n'existe pas
+            mkdir -p "/home/$USERNAME/.bitmonero"
+            cat > "$CONFIG_FILE" << EOL
+# Configuration Monero
+no-igd=1
+no-zmq=1
+rpc-bind-ip=0.0.0.0
+rpc-bind-port=18081
+p2p-bind-port=18080
+p2p-bind-ip=0.0.0.0
+in-peers=32
+out-peers=32
+disable-dns-checkpoints=1
+confirm-external-bind=1
+data-dir=$BLOCKCHAIN_LOCATION
+EOL
+        fi
+        
+        # Mettre à jour l'option prune-blockchain selon le choix de l'utilisateur
+        if [ "$BLOCKCHAIN_TYPE" = "pruned" ]; then
+            # Vérifier si l'option prune-blockchain existe déjà
+            if grep -q "prune-blockchain" "$CONFIG_FILE"; then
+                # Remplacer l'option existante
+                sed -i 's/prune-blockchain=.*/prune-blockchain=1/' "$CONFIG_FILE"
+            else
+                # Ajouter l'option
+                echo "prune-blockchain=1" >> "$CONFIG_FILE"
+            fi
+            success "$(get_message "Configuration mise à jour pour blockchain élaguée (pruned)" "Configuration updated for pruned blockchain")"
+        else
+            # Supprimer l'option prune-blockchain si elle existe
+            sed -i '/prune-blockchain/d' "$CONFIG_FILE"
+            success "$(get_message "Configuration mise à jour pour blockchain complète" "Configuration updated for complete blockchain")"
+        fi
+        
+        # S'assurer des bonnes permissions
+        sudo chown "$USERNAME:$USERNAME" "$CONFIG_FILE"
+        sudo chmod 644 "$CONFIG_FILE"
+        sudo chown -R "$USERNAME:$USERNAME" "/home/$USERNAME/.bitmonero"
+        sudo chmod -R u+rw "/home/$USERNAME/.bitmonero"
+    fi
+
+    # Configuration du port forwarding WSL2
+    configure_wsl_port_forwarding
+
+    # Compter et afficher le nombre d'IP bannies
+    banned_count=$(count_banned_ips)
+    info "$(get_message "Nombre d'adresses IP bannies: $banned_count" "Number of banned IP addresses: $banned_count")"
+
+    print_styled "PRIMARY" "$(get_message "Démarrer la blockchain MONERO ?" "Start MONERO blockchain?")"
+    print_styled "PRIMARY" "1) $(get_message "Avec blocage IP" "With IP blocking")"
+    print_styled "PRIMARY" "2) $(get_message "Sans blocage IP" "Without IP blocking")"
+    print_styled "PRIMARY" "3) $(get_message "Annuler" "Cancel")"
+    echo -n "$(print_styled "INFO" "$(get_message "Choix (1-3): " "Choice (1-3): ")")"
+    read -r START_CHOICE
+
+    # Vérification des permissions avant le démarrage
+    if [ -n "$BLOCKCHAIN_LOCATION" ] && [ ! -w "$BLOCKCHAIN_LOCATION" ]; then
+        error "$(get_message "Permissions insuffisantes sur $BLOCKCHAIN_LOCATION" "Insufficient permissions on $BLOCKCHAIN_LOCATION")"
+        return 1
+    fi
+
+    MONEROD_PATH="/home/$USERNAME/monero/monerod"
+    if [ ! -x "$MONEROD_PATH" ]; then
+        error "$(get_message "monerod n'est pas trouvé ou n'est pas exécutable" "monerod not found or not executable")"
+        return 1
+    fi
+
+    # Définir la fonction de gestion SIGINT séparément pour éviter les problèmes de guillemets
+    handle_sigint() {
+        echo ""
+        info "$(get_message "Arrêt de la blockchain..." "Stopping blockchain...")"
+        local current_banned=$(count_banned_ips)
+        info "$(get_message "Nombre d'adresses IP bannies: $current_banned" "Number of banned IP addresses: $current_banned")"
+        trap - SIGINT
+        return 0
+    }
+
+    # Assigner la fonction au trap
+    trap handle_sigint SIGINT
+
+    case $START_CHOICE in
+        1)
+            # Lancer avec les bans IP
+            apply_ip_bans "$MONEROD_PATH" &
+            BAN_PROCESS_PID=$!
+            
+            # Corriger les permissions avant de démarrer
+            if [ -n "$BLOCKCHAIN_LOCATION" ]; then
+                # Corriger les permissions du dossier de données
+                if [ -d "$BLOCKCHAIN_LOCATION" ]; then
+                    sudo chown -R "$USERNAME:$USERNAME" "$BLOCKCHAIN_LOCATION" 2>/dev/null || true
+                    sudo chmod -R u+rw "$BLOCKCHAIN_LOCATION" 2>/dev/null || true
+                fi
+                
+                # Corriger les permissions du dossier .bitmonero
+                sudo chown -R "$USERNAME:$USERNAME" "/home/$USERNAME/.bitmonero" 2>/dev/null || true
+                sudo chmod -R u+rw "/home/$USERNAME/.bitmonero" 2>/dev/null || true
+            fi
+            
+            # Fonction de monitoring des peers
+            monitor_peers() {
+                sleep 10  # Attendre que monerod démarre
+                
+                while pgrep -f "monerod" > /dev/null; do
+                    # Obtenir les infos via RPC
+                    PEER_INFO=$(curl -s -X POST http://localhost:18081/json_rpc \
+                        -H "Content-Type: application/json" \
+                        -d '{"jsonrpc":"2.0","id":"0","method":"get_info"}' 2>/dev/null)
+                    
+                    if [ $? -eq 0 ] && echo "$PEER_INFO" | grep -q '"result"'; then
+                        IN_PEERS=$(echo "$PEER_INFO" | sed -n 's/.*"incoming_connections_count":\s*\([0-9]*\).*/\1/p')
+                        OUT_PEERS=$(echo "$PEER_INFO" | sed -n 's/.*"outgoing_connections_count":\s*\([0-9]*\).*/\1/p')
+                        HEIGHT=$(echo "$PEER_INFO" | sed -n 's/.*"height":\s*\([0-9]*\).*/\1/p')
+                        TARGET=$(echo "$PEER_INFO" | sed -n 's/.*"target_height":\s*\([0-9]*\).*/\1/p')
+                        SYNC_STATUS=$(echo "$PEER_INFO" | sed -n 's/.*"synchronized":\s*\([^,]*\).*/\1/p')
+                        
+                        # Calculer le pourcentage de synchronisation
+                        if [ -n "$HEIGHT" ] && [ -n "$TARGET" ] && [ "$TARGET" -gt 0 ]; then
+                            PERCENT=$((HEIGHT * 100 / TARGET))
+                        else
+                            PERCENT=0
+                        fi
+                        
+                        # Affichage avec couleurs
+                        echo -ne "\r$(print_styled "SUCCESS" "IN-PEERS: ${IN_PEERS:-0}") | $(print_styled "SUCCESS" "OUT-PEERS: ${OUT_PEERS:-0}")                    "
+                    fi
+                    
+                    sleep 15  # Actualiser toutes les 15 secondes
+                done
+            }
+            
+            # Lancer le monitoring en arrière-plan
+            monitor_peers &
+            MONITOR_PID=$!
+            
+            # Démarrer monerod
+            if [ -n "$BLOCKCHAIN_LOCATION" ]; then
+                info "$(get_message "Démarrage de la blockchain avec le fichier de configuration" "Starting blockchain with config file")"
+                "$MONEROD_PATH" --config-file="$CONFIG_FILE" --non-interactive
+            else
+                info "$(get_message "Démarrage de la blockchain avec le dossier par défaut" "Starting blockchain with default folder")"
+                "$MONEROD_PATH" --data-dir="$DEFAULT_DATA_DIR" --non-interactive
+            fi
+
+            # Nettoyage
+            if [ -n "$BAN_PROCESS_PID" ]; then
+                kill $BAN_PROCESS_PID 2>/dev/null
+            fi
+            if [ -n "$MONITOR_PID" ]; then
+                kill $MONITOR_PID 2>/dev/null
+            fi
+            ;;
+        2)
+            # Démarrer sans les bans IP
+            
+            # Fonction de monitoring des peers (même pour sans bans IP)
+            monitor_peers() {
+                sleep 10  # Attendre que monerod démarre
+                
+                while pgrep -f "monerod" > /dev/null; do
+                    # Obtenir les infos via RPC
+                    PEER_INFO=$(curl -s -X POST http://localhost:18081/json_rpc \
+                        -H "Content-Type: application/json" \
+                        -d '{"jsonrpc":"2.0","id":"0","method":"get_info"}' 2>/dev/null)
+                    
+                    if [ $? -eq 0 ] && echo "$PEER_INFO" | grep -q '"result"'; then
+                        IN_PEERS=$(echo "$PEER_INFO" | sed -n 's/.*"incoming_connections_count":\s*\([0-9]*\).*/\1/p')
+                        OUT_PEERS=$(echo "$PEER_INFO" | sed -n 's/.*"outgoing_connections_count":\s*\([0-9]*\).*/\1/p')
+                        HEIGHT=$(echo "$PEER_INFO" | sed -n 's/.*"height":\s*\([0-9]*\).*/\1/p')
+                        TARGET=$(echo "$PEER_INFO" | sed -n 's/.*"target_height":\s*\([0-9]*\).*/\1/p')
+                        SYNC_STATUS=$(echo "$PEER_INFO" | sed -n 's/.*"synchronized":\s*\([^,]*\).*/\1/p')
+                        
+                        # Calculer le pourcentage de synchronisation
+                        if [ -n "$HEIGHT" ] && [ -n "$TARGET" ] && [ "$TARGET" -gt 0 ]; then
+                            PERCENT=$((HEIGHT * 100 / TARGET))
+                        else
+                            PERCENT=0
+                        fi
+                        
+                        # Affichage avec couleurs
+                        echo -ne "\r$(print_styled "SUCCESS" "IN-PEERS: ${IN_PEERS:-0}") | $(print_styled "SUCCESS" "OUT-PEERS: ${OUT_PEERS:-0}")                    "
+                    fi
+                    
+                    sleep 15  # Actualiser toutes les 15 secondes
+                done
+            }
+            
+            # Lancer le monitoring en arrière-plan
+            monitor_peers &
+            MONITOR_PID=$!
+            
+            # Démarrer sans les bans IP
+            if [ -n "$BLOCKCHAIN_LOCATION" ]; then
+                info "$(get_message "Démarrage de la blockchain avec le fichier de configuration" "Starting blockchain with config file")"
+                "$MONEROD_PATH" --config-file="$CONFIG_FILE" --non-interactive
+            else
+                info "$(get_message "Démarrage de la blockchain avec le dossier par défaut" "Starting blockchain with default folder")"
+                "$MONEROD_PATH" --data-dir="$DEFAULT_DATA_DIR" --non-interactive
+            fi
+            
+            # Nettoyage
+            if [ -n "$MONITOR_PID" ]; then
+                kill $MONITOR_PID 2>/dev/null
+            fi
+            ;;
+        3|*)
+            info "$(get_message "Démarrage annulé" "Startup cancelled")"
+            # Réinitialiser le trap avant de sortir
+            trap - SIGINT
+            return 1
+            ;;
+    esac
+
+    # Réinitialiser le trap à la fin
+    trap - SIGINT
+}
+
+# Demande du nom d'utilisateur
+ask_username() {
+    print_header "$(get_message "CONFIGURATION UTILISATEUR" "USER CONFIGURATION")"
+    
+    # Récupération automatique du nom d'utilisateur actuel
+    local current_user=""
+    if [ -n "$SUDO_USER" ]; then
+        current_user="$SUDO_USER"
+    elif [ -n "$USER" ]; then
+        current_user="$USER"
+    else
+        current_user=$(whoami)
+    fi
+    
+    # Afficher l'utilisateur détecté avec le nom en vert
+    echo -e "$(get_message "Utilisateur détecté: " "Detected user: ")${COLORS[SUCCESS]}${current_user}${COLORS[RESET]}"
+    echo
+    
+    print_styled "INFO" "$(get_message "Appuyez sur Entrée pour confirmer ou tapez un autre nom d'utilisateur: " "Press Enter to confirm or type another username: ")"
+    read -r input_username
+    
+    # Si l'utilisateur appuie juste sur Entrée, utiliser l'utilisateur actuel
+    if [ -z "$input_username" ]; then
+        input_username="$current_user"
+        echo -e "$(get_message "Utilisation de l'utilisateur: " "Using user: ")${COLORS[SUCCESS]}${input_username}${COLORS[RESET]}"
+        USERNAME="$input_username"
+        return 0  # Success - user confirmed
+    fi
+    
+    # Si l'utilisateur entre un nom différent, vérifier s'il existe
+    if ! id "$input_username" &>/dev/null; then
+        error "$(get_message "L'utilisateur n'existe pas" "User does not exist")"
+        return 1  # Error - invalid user
+    fi
+    
+    USERNAME="$input_username"
+    echo -e "$(get_message "Utilisateur validé: " "Validated user: ")${COLORS[SUCCESS]}${USERNAME}${COLORS[RESET]}"
+    return 0  # Success - new user validated
+}
+
+# Installation de Monero CLI
+install_monero_cli() {
+    if [ -z "$USERNAME" ]; then
+        error "$(get_message "Nom d'utilisateur non défini" "Username not defined")"
+        return 1
+    fi
+
+    print_header "$(get_message "INSTALLATION DE MONERO" "MONERO INSTALLATION")"
+    
+    # Installation de curl si nécessaire
+    if ! command -v curl &> /dev/null; then
+        info "$(get_message "Installation de curl..." "Installing curl...")"
+        sudo apt-get update && sudo apt-get install -y curl
+    fi
+    
+    # Test de la connectivité
+    if ! (ping -c 1 8.8.8.8 &> /dev/null || ping -c 1 1.1.1.1 &> /dev/null || curl -s google.com &> /dev/null); then
+    warning "Problème de connectivité détecté. Configuration DNS de secours..."
+    echo "nameserver 94.140.14.14" | sudo tee /etc/resolv.conf > /dev/null
+    echo "nameserver 8.8.8.8" | sudo tee -a /etc/resolv.conf > /dev/null
+fi
+    
+    
+    mkdir -p ~/monero_install
+    cd ~/monero_install || exit
+
+    info "$(get_message "Téléchargement de Monero..." "Downloading Monero...")"
+    
+    local download_urls=(
+        "https://downloads.getmonero.org/cli/monero-linux-x64-v${MONERO_VERSION}.tar.bz2"
+        "https://dlsrc.getmonero.org/cli/monero-linux-x64-v${MONERO_VERSION}.tar.bz2"
+    )
+
+    local download_success=false
+    for url in "${download_urls[@]}"; do
+        info "$(get_message "Essai de téléchargement depuis" "Trying to download from") $url"
+        if curl --max-time 60 --retry 3 --retry-delay 5 -L -o "monero-linux-x64-v${MONERO_VERSION}.tar.bz2" "$url"; then
+            download_success=true
+            break
+        fi
+        warning "$(get_message "Échec, essai de la source suivante..." "Failed, trying next source...")"
+    done
+
+    if [ "$download_success" = false ]; then
+        error "$(get_message "Tous les téléchargements ont échoué" "All downloads failed")"
+        return 1
+    fi
+
+    success "$(get_message "Téléchargement terminé" "Download completed")"
+    
+     # Ajouter la vérification du hash ici :
+    info "$(get_message "Vérification de l'intégrité du fichier..." "Verifying file integrity...")"
+    
+    # Téléchargement du fichier de hash
+    local hash_url="https://www.getmonero.org/downloads/hashes.txt"
+    if ! curl -L -o "hashes.txt" "$hash_url"; then
+        error "$(get_message "Impossible de télécharger le fichier de hash" "Unable to download hash file")"
+        return 1
+    fi
+
+    # Vérification que le fichier de hash contient bien notre version
+    if ! grep -q "monero-linux-x64-v${MONERO_VERSION}.tar.bz2" hashes.txt; then
+        error "$(get_message "Hash non trouvé pour cette version" "Hash not found for this version")"
+        return 1
+    fi
+
+    # Extraction du hash attendu
+    expected_hash=$(grep "monero-linux-x64-v${MONERO_VERSION}.tar.bz2" hashes.txt | cut -d' ' -f1)
+    
+    # Calcul du hash du fichier téléchargé
+    actual_hash=$(sha256sum "monero-linux-x64-v${MONERO_VERSION}.tar.bz2" | cut -d' ' -f1)
+
+    # Comparaison des hash
+    if [ "$expected_hash" != "$actual_hash" ]; then
+        error "$(get_message "Vérification du hash échouée" "Hash verification failed")"
+        error "$(get_message "Hash attendu:" "Expected hash:") $expected_hash"
+        error "$(get_message "Hash obtenu:" "Obtained hash:") $actual_hash"
+        return 1
+    fi
+    
+    success "$(get_message "Vérification du hash réussie" "Hash verification successful")"
+
+    info "$(get_message "Extraction des fichiers..." "Extracting files...")"
+    if tar xvf "monero-linux-x64-v${MONERO_VERSION}.tar.bz2"; then
+        success "$(get_message "Extraction terminée" "Extraction completed")"
+    else
+        error "$(get_message "Échec de l'extraction" "Extraction failed")"
+        return 1
+    fi
+
+    sudo mkdir -p "/home/$USERNAME/monero"
+    sudo cp -r "monero-x86_64-linux-gnu-v${MONERO_VERSION}"/* "/home/$USERNAME/monero/"
+    echo "export PATH=\$PATH:/home/$USERNAME/monero" | sudo tee -a "/home/$USERNAME/.bashrc"
+
+    sudo chown -R "$USERNAME:$USERNAME" "/home/$USERNAME/monero"
+    sudo chmod -R 755 "/home/$USERNAME/monero"
+
+    sudo mkdir -p "/home/$USERNAME/.bitmonero"
+    sudo chown -R "$USERNAME:$USERNAME" "/home/$USERNAME/.bitmonero"
+    sudo chmod -R 755 "/home/$USERNAME/.bitmonero"
+
+    cd ~ || exit
+    rm -rf ~/monero_install
+
+    success "$(get_message "Installation terminée dans" "Installation completed in") /home/$USERNAME/monero"
+    read -p "$(print_styled "PRIMARY" "$(get_message "Appuyez sur Entrée pour continuer..." "Press Enter to continue...")")"
+}
+
+# Installation de Tor
+install_tor() {
+    print_header "$(get_message "INSTALLATION DE TOR" "TOR INSTALLATION")"
+    
+    info "$(get_message "Installation de Tor..." "Installing Tor...")"
+    if sudo apt update && sudo apt install -y tor; then
+        success "$(get_message "Installation de Tor terminée" "Tor installation completed")"
+    else
+        error "$(get_message "Échec de l'installation de Tor" "Tor installation failed")"
+        return 1
+    fi
+
+    sudo cp /etc/tor/torrc /etc/tor/torrc.backup
+
+    # Supprimer le fichier torrc existant et le recréer vide
+    info "$(get_message "Réinitialisation du fichier de configuration..." "Resetting configuration file...")"
+    sudo rm -f /etc/tor/torrc
+    sudo touch /etc/tor/torrc
+    #ecriture de la nouvelle configuration
+    {
+        echo "SOCKSPort 9050"
+        echo "ControlPort 9051"
+        echo "HiddenServiceDir /var/lib/tor/ssh/"
+        echo "HiddenServicePort 22 127.0.0.1:22"
+        echo "HiddenServiceDir /var/lib/tor/monero-service/"
+        echo "HiddenServicePort 18081 127.0.0.1:18081"
+    } | sudo tee -a /etc/tor/torrc
+
+    sudo mkdir -p /var/lib/tor/monero-service/
+    sudo chown -R debian-tor:debian-tor /var/lib/tor/monero-service/
+    sudo chmod 700 /var/lib/tor/monero-service/
+
+    info "$(get_message "Redémarrage de Tor..." "Restarting Tor...")"
+    sudo systemctl restart tor
+
+    info "$(get_message "Génération de l'adresse onion..." "Generating onion address...")"
+    sleep 10
+
+    if [ -f /var/lib/tor/monero-service/hostname ]; then
+        ONION_ADDRESS=$(sudo cat /var/lib/tor/monero-service/hostname)
+        success "$(get_message "Adresse onion: " "Onion address: ")$ONION_ADDRESS"
+        echo "Monero Onion Address ($(date)): $ONION_ADDRESS" | sudo tee -a "/home/$USERNAME/monero_onion_address.txt"
+        sudo chown "$USERNAME:$USERNAME" "/home/$USERNAME/monero_onion_address.txt"
+        echo "-------------------->$(get_message "L'adresse est sauvegardée dans le Dossier /home" "The address is saved in the folder /home")"
+    else
+        error "$(get_message "Échec de la génération de l'adresse onion" "Failed to generate onion address")"
+    fi
+# Gestion de l'adresse SSH
+    if [ -f /var/lib/tor/ssh/hostname ]; then
+        SSH_ONION_ADDRESS=$(sudo cat /var/lib/tor/ssh/hostname)
+        success "$(get_message "Adresse onion SSH: " "SSH onion address: ")$SSH_ONION_ADDRESS"
+        echo "SSH Onion Address ($(date)): $SSH_ONION_ADDRESS" | sudo tee -a "/home/$USERNAME/ssh_onion_address.txt"
+        sudo chown "$USERNAME:$USERNAME" "/home/$USERNAME/ssh_onion_address.txt"
+        echo "-------------------->$(get_message "L'adresse SSH est sauvegardée dans le dossier /home" "The SSH address is saved in the folder /home")"
+        
+    else
+        error "$(get_message "Échec de la génération de l'adresse onion SSH" "Failed to generate SSH onion address")"
+    fi
+    read -p "$(print_styled "PRIMARY" "$(get_message "Appuyez sur Entrée pour continuer..." "Press Enter to continue...")")"
+}
+
+
+# Configuration de Monero
+configure_monero() {
+    if [ -z "$USERNAME" ]; then
+        error "$(get_message "Nom d'utilisateur non défini" "Username not defined")"
+        return 1
+    fi
+
+    print_header "$(get_message "CONFIGURATION DE MONERO" "MONERO CONFIGURATION")"
+    
+    local config_file="/home/$USERNAME/.bitmonero/bitmonero.conf"
+    mkdir -p "/home/$USERNAME/.bitmonero"
+
+    # Configuration de base
+    cat > "$config_file" << EOL
+# Configuration Monero
+no-igd=1
+no-zmq=1
+rpc-bind-ip=0.0.0.0
+rpc-bind-port=18081
+p2p-bind-port=18080
+p2p-bind-ip=0.0.0.0
+in-peers=32
+out-peers=32
+disable-dns-checkpoints=1
+confirm-external-bind=1
+data-dir=/home/$USERNAME/.bitmonero
+EOL
+
+# Télécharger la liste des bans depuis GitHub s'il n'existe pas déjà
+if [ ! -f "/home/$USERNAME/.bitmonero/ban_list.txt" ]; then
+    info "$(get_message "Téléchargement de la liste des bans..." "Downloading ban list...")"
+    if curl -s -o "/home/$USERNAME/.bitmonero/ban_list.txt.tmp" "https://raw.githubusercontent.com/Boog900/monero-ban-list/main/ban_list.txt"; then
+        # Traiter le fichier pour ajouter une durée de bannissement de 3 mois
+        BAN_DURATION=7776000   # 3 mois (90 jours)
+        # Créer un fichier temporaire
+        > "/home/$USERNAME/.bitmonero/ban_list.txt"
+        # Lire chaque ligne, ajouter la durée et écrire dans le nouveau fichier
+        while read -r ip; do
+            # Ignorer les lignes vides et commentaires
+            if [[ -n "$ip" && ! "$ip" =~ ^[[:space:]]*# ]]; then
+                echo "$ip $BAN_DURATION" >> "/home/$USERNAME/.bitmonero/ban_list.txt"
+            else
+                # Préserver les commentaires et lignes vides
+                echo "$ip" >> "/home/$USERNAME/.bitmonero/ban_list.txt"
+            fi
+        done < "/home/$USERNAME/.bitmonero/ban_list.txt.tmp"
+        
+        # Supprimer le fichier temporaire
+        rm -f "/home/$USERNAME/.bitmonero/ban_list.txt.tmp"
+        
+        sudo chown "$USERNAME:$USERNAME" "/home/$USERNAME/.bitmonero/ban_list.txt"
+        sudo chmod 644 "/home/$USERNAME/.bitmonero/ban_list.txt"
+        success "$(get_message "Liste des bans téléchargée avec durée de 3 mois" "Ban list downloaded with duration of 3 months")"
+    else
+        warning "$(get_message "Échec du téléchargement, création d'un fichier vide" "Download failed, creating empty file")"
+        touch "/home/$USERNAME/.bitmonero/ban_list.txt"
+        sudo chown "$USERNAME:$USERNAME" "/home/$USERNAME/.bitmonero/ban_list.txt"
+        sudo chmod 644 "/home/$USERNAME/.bitmonero/ban_list.txt"
+    fi
+fi
+   
+    sudo chown "$USERNAME:$USERNAME" "$config_file"
+    sudo chmod 644 "$config_file"
+    sudo chown -R "$USERNAME:$USERNAME" "/home/$USERNAME/.bitmonero"
+    sudo chmod -R u+rw "/home/$USERNAME/.bitmonero"
+    
+    # Vérifier si la blockchain est sur un disque externe
+if grep -q "data-dir=" "$CONFIG_FILE" | grep -q "/media"; then
+    # Si la blockchain est sur un disque externe
+    BLOCKCHAIN_PATH=$(grep "data-dir=" "$CONFIG_FILE" | cut -d'=' -f2)
+    
+    # Créer un lien symbolique si nécessaire
+    if [ ! -d "$BLOCKCHAIN_PATH" ]; then
+        mkdir -p "$(dirname "$BLOCKCHAIN_PATH")"
+        ln -sf "/home/$USERNAME/.bitmonero" "$BLOCKCHAIN_PATH"
+    fi
+fi
+
+
+    success "$(get_message "Configuration créée dans" "Configuration created in") $config_file"
+    read -p "$(print_styled "PRIMARY" "$(get_message "Appuyez sur Entrée pour continuer..." "Press Enter to continue...")")"
+}
+
+# Configuration des DNS
+configure_dns() {
+    print_header "$(get_message "CONFIGURATION DNS" "DNS CONFIGURATION")"
+    
+    info "$(get_message "Configuration des serveurs DNS..." "Configuring DNS servers...")"
+
+    # Sauvegarder la configuration actuelle
+    if [ -f /etc/resolv.conf ]; then
+        sudo cp /etc/resolv.conf /etc/resolv.conf.backup
+    fi
+
+    # Désactiver DNSSec
+    info "$(get_message "Désactivation de DNSSec..." "Disabling DNSSec...")"
+    sudo mkdir -p /etc/systemd/resolved.conf.d/
+    cat << EOF | sudo tee /etc/systemd/resolved.conf.d/dnssec.conf > /dev/null
+[Resolve]
+DNSSEC=no
+EOF
+
+    # Arrêter et désactiver systemd-resolved
+    if systemctl is-active --quiet systemd-resolved; then
+        sudo systemctl stop systemd-resolved
+        sudo systemctl disable systemd-resolved
+    fi
+
+    # Supprimer le lien symbolique s'il existe
+    if [ -L /etc/resolv.conf ]; then
+        sudo rm -f /etc/resolv.conf
+    fi
+
+    # Créer le nouveau fichier resolv.conf
+    info "$(get_message "Configuration des serveurs DNS..." "Configuring DNS servers...")"
+    cat << EOL | sudo tee /etc/resolv.conf > /dev/null
+# Serveurs DNS pour Monero  
+nameserver 94.140.14.14
+nameserver 94.140.15.15
+EOL
+
+    # Définir les permissions appropriées
+    sudo chmod 644 /etc/resolv.conf
+
+    success "$(get_message "Configuration DNS terminée" "DNS configuration completed")"
+    info "$(get_message "Backup créé: /etc/resolv.conf.backup" "Backup created: /etc/resolv.conf.backup")"
+    
+    read -p "$(print_styled "PRIMARY" "$(get_message "Appuyez sur Entrée pour continuer..." "Press Enter to continue...")")"
+}
+
+# Reparation des DNS
+reparation_dns() {
+    print_header "$(get_message "CONFIGURATION DNS" "DNS CONFIGURATION")"
+    
+    info "$(get_message "Configuration des serveurs DNS..." "Configuring DNS servers...")"
+
+    # Sauvegarder la configuration actuelle
+    if [ -f /etc/resolv.conf ]; then
+        sudo cp /etc/resolv.conf /etc/resolv.conf.backup
+    fi
+
+    # Désactiver DNSSec
+    info "$(get_message "Désactivation de DNSSec..." "Disabling DNSSec...")"
+    sudo mkdir -p /etc/systemd/resolved.conf.d/
+    cat << EOF | sudo tee /etc/systemd/resolved.conf.d/dnssec.conf > /dev/null
+[Resolve]
+DNSSEC=no
+EOF
+
+    # Arrêter et désactiver systemd-resolved
+    if systemctl is-active --quiet systemd-resolved; then
+        sudo systemctl stop systemd-resolved
+        sudo systemctl disable systemd-resolved
+    fi
+
+    # Supprimer le lien symbolique s'il existe
+    if [ -L /etc/resolv.conf ]; then
+        sudo rm -f /etc/resolv.conf
+    fi
+
+    # Créer le nouveau fichier resolv.conf
+    info "$(get_message "Configuration des serveurs DNS..." "Configuring DNS servers...")"
+    cat << EOL | sudo tee /etc/resolv.conf > /dev/null
+# Serveurs DNS pour Monero
+nameserver 94.140.14.14
+nameserver 94.140.15.15
+EOL
+    # Définir les permissions appropriées
+    sudo chmod 644 /etc/resolv.conf
+
+    success "$(get_message "Configuration DNS terminée" "DNS configuration completed")"
+    info "$(get_message "Backup créé: /etc/resolv.conf.backup" "Backup created: /etc/resolv.conf.backup")"
+    
+}
+
+
+manage_blockchain() {
+    print_header "$(get_message "GESTION DE LA BLOCKCHAIN" "BLOCKCHAIN MANAGEMENT")"
+    
+    if [ -z "$USERNAME" ]; then
+        error "$(get_message "Nom d'utilisateur non défini" "Username not defined")"
+        return 1
+    fi
+
+    # Liste des disques disponibles avec leur espace
+    info "$(get_message "Lecteurs disponibles:" "Available drives:")"
+    echo "----------------------------------------"
+    printf "%-8s %-15s %-15s %-15s\n" "$(get_message "Lettre" "Letter")" "$(get_message "Total" "Total")" "$(get_message "Utilisé" "Used")" "$(get_message "Disponible" "Available")"
+    echo "----------------------------------------"
+
+    # Tableau pour stocker les lecteurs valides
+    declare -a valid_drives=()
+
+    # Essayer de monter tous les lecteurs possibles
+    for letter in {c..z}; do
+        mount_point="/mnt/$letter"
+        
+        # Créer le point de montage s'il n'existe pas
+        if [ ! -d "$mount_point" ]; then
+            sudo mkdir -p "$mount_point"
+        fi
+
+        # Tenter de monter le lecteur s'il n'est pas déjà monté
+        if ! mountpoint -q "$mount_point"; then
+            if sudo mount -t drvfs "${letter^^}:" "$mount_point" 2>/dev/null; then
+                # Si le montage réussit, afficher les informations
+                if df -h "$mount_point" 2>/dev/null | grep -q "$mount_point"; then
+                    valid_drives+=("$letter")
+                    df_info=$(df -h "$mount_point" | tail -n 1)
+                    total=$(echo "$df_info" | awk '{print $2}')
+                    used=$(echo "$df_info" | awk '{print $3}')
+                    avail=$(echo "$df_info" | awk '{print $4}')
+                    printf "%-8s %-15s %-15s %-15s\n" "${letter^^}:" "$total" "$used" "$avail"
+                fi
+            else
+                # Si le montage échoue, supprimer le dossier vide
+                sudo rmdir "$mount_point" 2>/dev/null
+            fi
+        else
+            # Si déjà monté, afficher les informations
+            if df -h "$mount_point" 2>/dev/null | grep -q "$mount_point"; then
+                valid_drives+=("$letter")
+                df_info=$(df -h "$mount_point" | tail -n 1)
+                total=$(echo "$df_info" | awk '{print $2}')
+                used=$(echo "$df_info" | awk '{print $3}')
+                avail=$(echo "$df_info" | awk '{print $4}')
+                printf "%-8s %-15s %-15s %-15s\n" "${letter^^}:" "$total" "$used" "$avail"
+            fi
+        fi
+    done
+    echo "----------------------------------------"
+
+   # Demander à l'utilisateur de choisir un lecteur
+while true; do
+    echo -n "$(print_styled "INFO" "$(get_message "Entrez la lettre du lecteur (ex: d pour D:) ou 'q/Q' pour quitter : " "Enter drive letter (e.g., d for D:) or 'q/Q' to quit: ")")"
+    read -r windows_drive_letter
+    
+    # Permettre à l'utilisateur de quitter avec 'q' ou 'Q'
+    if [ "$windows_drive_letter" = "q" ] || [ "$windows_drive_letter" = "" ] || [ "$windows_drive_letter" = "Q" ]; then
+        return 1
+    fi
+        
+        # Convertir en minuscule pour la comparaison
+        windows_drive_letter=$(echo "$windows_drive_letter" | tr '[:upper:]' '[:lower:]')
+        
+        # Vérifier si le lecteur est valide
+        if [[ " ${valid_drives[@]} " =~ " ${windows_drive_letter} " ]]; then
+            break
+        else
+            error "$(get_message "Lecteur invalide. Veuillez choisir parmi les lecteurs affichés." "Invalid drive. Please choose from the displayed drives.")"
+        fi
+    done
+
+    local mount_point="/mnt/$windows_drive_letter"
+
+    # Démonter d'abord si déjà monté
+    if mountpoint -q "$mount_point"; then
+        warning "$(get_message "Le lecteur est déjà monté. Démontage en cours..." "Drive is already mounted. Unmounting...")"
+        sudo umount "$mount_point"
+    fi
+
+    # Faire le montage direct sans utiliser fstab
+    info "$(get_message "Montage du lecteur" "Mounting drive") ${windows_drive_letter}: sur $mount_point..."
+    if ! sudo mount -t drvfs "${windows_drive_letter}:" "$mount_point" -o "metadata,uid=$(id -u "$USERNAME"),gid=$(id -g "$USERNAME")"; then
+        error "$(get_message "Erreur lors du montage" "Mount failed")"
+        return 1
+    fi
+
+    # Mise à jour de la variable globale du point de montage
+    CURRENT_MOUNT_POINT="$mount_point"
+
+    # Configuration du dossier blockchain
+    local blockchain_path="$mount_point/MoneroBlockchain"
+    mkdir -p "$blockchain_path"
+    
+    # Mise à jour de la configuration Monero
+    local config_file="/home/$USERNAME/.bitmonero/bitmonero.conf"
+    
+    # Créer le dossier de configuration s'il n'existe pas
+    mkdir -p "$(dirname "$config_file")"
+    
+    # Sauvegarder l'ancienne configuration si elle existe
+    if [ -f "$config_file" ]; then
+        cp "$config_file" "${config_file}.backup"
+    fi
+
+    # Créer la nouvelle configuration
+    cat > "$config_file" << EOL
+# Configuration Monero
+no-igd=1
+no-zmq=1
+rpc-bind-ip=0.0.0.0
+rpc-bind-port=18081
+p2p-bind-port=18080
+p2p-bind-ip=0.0.0.0
+in-peers=32
+out-peers=32
+disable-dns-checkpoints=1
+confirm-external-bind=1
+data-dir=$blockchain_path
+EOL
+
+    if [ "$BLOCKCHAIN_TYPE" = "pruned" ]; then
+        echo "prune-blockchain=1" >> "$config_file"
+    fi
+
+    # Configuration des permissions
+    sudo chown -R "$USERNAME:$USERNAME" "$blockchain_path"
+    sudo chmod -R 755 "$blockchain_path"
+    sudo chown "$USERNAME:$USERNAME" "$config_file"
+    sudo chmod 644 "$config_file"
+    sudo chown -R "$USERNAME:$USERNAME" "/home/$USERNAME/.bitmonero"
+    sudo chmod -R u+rw "/home/$USERNAME/.bitmonero"
+    
+    
+
+    # Ajouter la commande de montage au .bashrc pour le remontage au démarrage
+    MOUNT_CMD="if ! mountpoint -q '$mount_point'; then sudo mount -t drvfs '${windows_drive_letter}:' '$mount_point' -o 'metadata,uid=$(id -u),gid=$(id -g)' 2>/dev/null; fi"
+    if ! grep -q "$MOUNT_CMD" "/home/$USERNAME/.bashrc"; then
+        echo "$MOUNT_CMD" >> "/home/$USERNAME/.bashrc"
+    fi
+
+# Vérifier si la blockchain est sur un disque externe
+if grep -q "data-dir=" "$CONFIG_FILE" | grep -q "/media"; then
+    # Si la blockchain est sur un disque externe
+    BLOCKCHAIN_PATH=$(grep "data-dir=" "$CONFIG_FILE" | cut -d'=' -f2)
+    
+    # Créer un lien symbolique si nécessaire
+    if [ ! -d "$BLOCKCHAIN_PATH" ]; then
+        mkdir -p "$(dirname "$BLOCKCHAIN_PATH")"
+        ln -sf "/home/$USERNAME/.bitmonero" "$BLOCKCHAIN_PATH"
+    fi
+fi
+
+    success "$(get_message "Configuration mise à jour avec le nouveau chemin" "Configuration updated with new path")"
+    info "$(get_message "Disque monté sur" "Disk mounted on") $mount_point"
+    info "$(get_message "Blockchain configurée dans" "Blockchain configured in") $blockchain_path"
+    
+    read -p "$(print_styled "PRIMARY" "$(get_message "Appuyez sur Entrée pour continuer..." "Press Enter to continue...")")"
+}
+apply_ip_bans() {
+    local MONEROD_PATH="$1"
+    local BAN_LIST_FILE="/home/$USERNAME/.bitmonero/ban_list.txt"
+    
+    info "$(get_message "Application des bans IP..." "Applying IP bans...")"
+    
+    # Attendre que le service RPC soit disponible
+    for i in {1..30}; do
+        if nc -z localhost 18081; then
+            success "$(get_message "Service RPC disponible" "RPC service available")"
+            break
+        fi
+        info "$(get_message "Attente du service RPC... ($i/30)" "Waiting for RPC service... ($i/30)")"
+        sleep 2
+    done
+
+    # Vérifier si le fichier existe
+    if [ ! -f "$BAN_LIST_FILE" ]; then
+        error "$(get_message "Fichier de bans non trouvé" "Ban list file not found")"
+        return 1
+    fi
+
+    # Compter le nombre total d'IPs à bannir (non commentées et non vides)
+    local total_bans=$(grep -v "^#" "$BAN_LIST_FILE" | grep -v "^$" | wc -l)
+    local ban_count=0
+
+    # Lire et appliquer les bans
+    while IFS=' ' read -r line || [ -n "$line" ]; do
+        # Ignorer les lignes vides et les commentaires
+        [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+        
+        # Extraire IP et durée
+        read -r ip duration <<< "$line"
+        
+        if [ -n "$ip" ] && [ -n "$duration" ]; then
+            "$MONEROD_PATH" ban "$ip" "$duration" --rpc-bind-port 18081
+            ban_count=$((ban_count + 1))
+            info "$(get_message "Ban appliqué: $ip ($ban_count/$total_bans)" "Ban applied: $ip ($ban_count/$total_bans)")"
+        fi
+    done < "$BAN_LIST_FILE"
+
+    success "$(get_message "Application des bans terminée ($total_bans IP bannies)" "Ban application completed ($total_bans IPs banned)")"
+}
+# Fonction pour compter le nombre d'IP bannies
+count_banned_ips() {
+    local BAN_LIST_FILE="/home/$USERNAME/.bitmonero/ban_list.txt"
+    
+    if [ ! -f "$BAN_LIST_FILE" ]; then
+        echo "0"
+        return
+    fi
+    
+    # Compter les lignes non vides et non commentées
+    local count=$(grep -v "^#" "$BAN_LIST_FILE" | grep -v "^$" | wc -l)
+    echo "$count"
+}
+
+unmount_external_disk() {
+    print_header "$(get_message "DÉMONTAGE DU DISQUE" "DISK UNMOUNTING")"
+    
+    local mount_point="/mnt"
+    
+    # Liste des points de montage actifs
+    info "$(get_message "Points de montage actifs:" "Active mount points:")"
+    mount | grep "/mnt/"
+    
+    # D'abord demander le nom d'utilisateur
+    ask_username
+    
+    if mount | grep -q "$mount_point"; then
+        warning "$(get_message "Fermeture des processus en cours..." "Closing active processes...")"
+        lsof "$mount_point" | awk 'NR!=1 {print $2}' | xargs -r sudo kill
+        sleep 2
+
+        for drive in $(mount | grep "^/mnt/" | cut -d' ' -f1); do
+            if sudo umount -f "$drive" 2>/dev/null; then
+                success "$(get_message "Disque démonté avec succès" "Disk unmounted successfully")"
+            else
+                error "$(get_message "Échec du démontage" "Unmounting failed")"
+            fi
+        done
+
+        # Reset de la variable globale du point de montage
+        CURRENT_MOUNT_POINT=""
+    else
+        warning "$(get_message "Aucun disque n'est monté dans" "No disk is mounted in") $mount_point"
+    fi
+
+    # Après le démontage, on supprime et recrée le fichier de configuration
+    sudo rm -f "/home/$USERNAME/.bitmonero/bitmonero.conf"
+    
+    # Réécrire le fichier comme dans le menu 4
+    local config_file="/home/$USERNAME/.bitmonero/bitmonero.conf"
+    mkdir -p "/home/$USERNAME/.bitmonero"
+
+    cat > "$config_file" << EOL
+# Configuration Monero
+no-igd=1
+no-zmq=1
+rpc-bind-ip=0.0.0.0
+rpc-bind-port=18081
+p2p-bind-port=18080
+p2p-bind-ip=0.0.0.0
+in-peers=32
+out-peers=32
+disable-dns-checkpoints=1
+confirm-external-bind=1
+data-dir=/home/$USERNAME/.bitmonero
+EOL
+
+    sudo chown "$USERNAME:$USERNAME" "$config_file"
+    sudo chmod 644 "$config_file"
+    sudo chown -R "$USERNAME:$USERNAME" "/home/$USERNAME/.bitmonero"
+    sudo chmod -R u+rw "/home/$USERNAME/.bitmonero"
+    
+    # Vérifier si la blockchain est sur un disque externe
+if grep -q "data-dir=" "$CONFIG_FILE" | grep -q "/media"; then
+    # Si la blockchain est sur un disque externe
+    BLOCKCHAIN_PATH=$(grep "data-dir=" "$CONFIG_FILE" | cut -d'=' -f2)
+    
+    # Créer un lien symbolique si nécessaire
+    if [ ! -d "$BLOCKCHAIN_PATH" ]; then
+        mkdir -p "$(dirname "$BLOCKCHAIN_PATH")"
+        ln -sf "/home/$USERNAME/.bitmonero" "$BLOCKCHAIN_PATH"
+    fi
+fi
+    
+    success "$(get_message "Configuration mise à jour" "Configuration updated")"
+    
+    read -p "$(print_styled "PRIMARY" "$(get_message "Appuyez sur Entrée pour continuer..." "Press Enter to continue...")")"
+}
+
+# Affichage NOTICE MANUAL
+show_scripts() {
+       clear
+       setup_terminal
+       echo -e "\n\n\n\n"  # Espace pour la bannière
+       print_header "$(get_message "INFOS" "FEATURES")"
+  
+  print_styled "TITLE" "1) $(get_message "Mise à jour système et installation des paquets" "System update and package installation")"
+    print_styled "PRIMARY" "   $(get_message "- Configuration du firewall activé avec ouverture des ports :" "- Firewall configuration Actived with ports opening:")"
+    echo -e "${COLORS[GRIS]}    $(get_message "-Ports system: 22(SSH), 80(HTTP), 443(HTTPS), 9050(Tor), 4200(SHELL IN BOX), 4444(i2p-http), 4447(i2p-socks), 53317(localsend)" "-System ports: 22(SSH), 80(HTTP), 443(HTTPS), 9050(Tor), 4200(SHELL IN BOX), 4444(i2p-http), 4447(i2p-socks), 53317(localsend)")${COLORS[RESET]}"
+    echo -e "${COLORS[GRIS]}    $(get_message "-Ports Monero: 18080(P2P), 18081(Public), 18083(ZMQ), 18084(Tor), 18085(I2P), 18086(LWS), 18081(RPC)" "-Monero ports: 18080(P2P), 18081(Public), 18083(ZMQ), 18084(Tor), 18085(I2P), 18086(LWS), 18081(RPC)")${COLORS[RESET]}"
+    echo
+    print_styled "TITLE" "2) $(get_message "Installation de Monero CLI" "Monero CLI Installation")"
+    print_styled "PRIMARY" "   $(get_message "- Installation des fichiers Monero" "- Installing Monero files")"
+    print_styled "PRIMARY" "   $(get_message "- Configuration des permissions" "- Setting up permissions")"
+    echo
+    print_styled "TITLE" "3) $(get_message "Installation et configuration de TOR" "TOR Installation and configuration")"
+           
+    if [ -f /var/lib/tor/monero-service/hostname ]; then
+    ONION_ADDRESS=$(sudo cat /var/lib/tor/monero-service/hostname)
+    echo -e "${COLORS[SUCCESS]}    -TOR Onion: $ONION_ADDRESS${COLORS[RESET]}"
+fi
+   print_styled "SUCCESS" "     PORT RPC: 18081"
+   if [ -f /var/lib/tor/ssh/hostname ]; then
+    SSH_ONION_ADDRESS=$(sudo cat /var/lib/tor/ssh/hostname)
+    echo -e "${COLORS[SUCCESS]}    -SSH Onion: $SSH_ONION_ADDRESS${COLORS[RESET]}"
+fi
+   print_styled "SUCCESS" "     PORT SSH: 22"
+   print_styled "WARNING" "   $(get_message "  Les adresses Tor sont créées uniquement lors de votre installation" "  Tor addresses are only created during installation")"
+    echo
+    print_styled "TITLE" "4) $(get_message "Configuration de bitmonero.conf" "bitmonero.conf configuration")"
+    print_styled "PRIMARY" "   $(get_message "- Configuration du fichier de démarrage" "- Configuring startup file")"
+    print_styled "PRIMARY" "   $(get_message "- Configuration des ports" "- Setting up ports")"
+    print_styled "SUCCESS" "$(get_message "    -rpc-bind-port=18081" "     rpc-bind-port=18081")"
+    print_styled "PRIMARY" "   $(get_message "- Configuration des chemins" "- Setting up paths")"
+    echo
+    print_styled "TITLE" "5) $(get_message "Configuration DNS Anonyme" "Anonymous DNS Configuration")"
+    print_styled "PRIMARY" "   $(get_message "- Installation des DNS sécurisés" "- Installing secure DNS")"
+    print_styled "PRIMARY" "   $(get_message "- Configuration des serveurs DNS" "- Configuring DNS servers")"
+    echo
+    print_styled "TITLE" "6)$(get_message " Démarrage Blockchain et Bloquage 'IP Bans list':" " Start & Block 'IP bans list':")"
+    print_styled "PRIMARY" "   $(get_message "- https://github.com/monero-project/meta/issues/1124" "- https://github.com/monero-project/meta/issues/1124")"
+    print_styled "PRIMARY" "   $(get_message "- https://github.com/Boog900/monero-ban-list/blob/main/ban_list.txt" "- https://github.com/Boog900/monero-ban-list/blob/main/ban_list.txt")"
+    echo
+    print_styled "WARNING" "$(get_message " ⚠️  Configurer votre router/Box internet pour REDIRIGER le port 22 et 18080" " ⚠️ Configure your router/internet box to REDIRECT port 22 and 18080")"
+   print_styled "WARNING" "$(get_message "    vers l'ADRESSE IP de votre PC" "    to your PC's IP ADDRESS")"
+                echo
+
+                read -p "$(print_styled "PRIMARY" "$(get_message "Appuyez sur Entrée pour continuer..." "Press Enter to continue...")")"
+}
+
+# Affichage des notes et informations
+show_notes() {
+    # Fonction pour réparer spécifiquement le service Tor
+    fix_tor_service
+     
+    print_header "$(get_message "NOTES" "READ")"
+    USERNAME=$SUDO_USER
+    print_styled "TITLE" "$(get_message "- Pour arrêter la blockchain : CTRL + C." "- To stop the blockchain: CTRL + C.")"
+    echo
+    print_styled "TITLE" "$(get_message "- Votre nom d'utilisateur est: ${COLORS[SUCCESS]}$USERNAME${COLORS[INFO]}" "- Your username is: ${COLORS[SUCCESS]}$USERNAME${COLORS[INFO]}")"
+    echo
+    #print_styled "TITLE" "$(get_message "- Votre nom d'utilisateur est: $USERNAME" "- Your username is: $USERNAME")"
+    # Vérification de l'adresse IP Tor
+    print_styled "TITLE" "$(get_message "- Vérification de l'adresse IP Tor..." "- Checking Tor IP address...")"
+    TOR_IP=$(torsocks curl -s https://check.torproject.org/api/ip 2>/dev/null)
+    if [ $? -eq 0 ] && [ -n "$TOR_IP" ]; then
+        print_styled "SUCCESS" "$(get_message "- Adresse IP TOR: ${COLORS[SUCCESS]}$TOR_IP${COLORS[SUCCESS]}" "- TOR IP address: ${COLORS[SUCCESS]}$TOR_IP${COLORS[SUCCESS]}")"
+    else
+        print_styled "ERROR" "$(get_message "- Impossible de récupérer l'adresse IP Tor" "- Unable to retrieve Tor IP address")"
+    fi
+    echo
+    print_styled "PRIMARY" "$(get_message "- Configuration réseau requise :" "- Required network configuration:")"
+    print_styled "PRIMARY" "$(get_message "/!\ REDIRIGER le port 22 et 18080 de votre Box internet" "/!\  Open port 22 and 18080 of your internet router")"
+    print_styled "PRIMARY" "$(get_message "  vers l'IP de votre PC." "  to your PC's IP address.")"
+    echo
+    print_styled "TITLE" "$(get_message "- Installer MONERO GUI pour la gestion du wallet:" "- Install MONERO GUI for wallet management:")"
+    print_styled "TITLE" "$(get_message "  https://www.getmonero.org/downloads/" "  https://www.getmonero.org/downloads/")"
+    echo
+    print_styled "PRIMARY" "$(get_message "  PDF Documentations point 5:" "  PDF Documentations point 5:")"
+    print_styled "PRIMARY" "$(get_message "  https://tinyurl.com/kerlann" "  https://tinyurl.com/kerlann")"
+    echo
+    
+    echo
+   print_styled "PRIMARY" "$(get_message "+ Gacieux Dons MONERO(Xmr) pour le dur labeur: " "+ Send MONERO Xmr donation for hard work")"
+    print_styled "PRIMARY" "$(get_message "  avec 'cake wallet' à:   kerlann.xmr" " with 'cake wallet' to:   kerlann.xmr")"
+    echo
+    print_styled "TITLE" "$(get_message "- Code source:" "- Source Code:")"
+    print_styled "TITLE" "$(get_message "  https://github.com/kerlannXmr/easymonerod" "  https://github.com/kerlannXmr/easymonerod")"
+    
+    read -p "$(print_styled "PRIMARY" "$(get_message "Appuyez sur Entrée pour continuer..." "Press Enter to continue...")")"
+}
+
+
+# Fonction de configuration du port forwarding pour WSL2
+configure_port_forwarding() {
+    print_header "$(get_message "CONFIGURATION PORT FORWARDING" "PORT FORWARDING CONFIGURATION")"
+    
+    # Récupération de l'adresse IP de WSL2
+    info "$(get_message "Récupération de l'adresse IP WSL2..." "Getting WSL2 IP address...")"
+    WSL_IP=$(ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
+    
+    if [ -z "$WSL_IP" ]; then
+        error "$(get_message "Impossible de récupérer l'adresse IP WSL2" "Unable to retrieve WSL2 IP address")"
+        return 1
+    fi
+    
+    success "$(get_message "Adresse IP WSL2: $WSL_IP" "WSL2 IP address: $WSL_IP")"
+    
+   
+
+   # Déterminer explicitement le chemin du dossier personnel
+USER_HOME="/home/$SUDO_USER"
+if [ ! -d "$USER_HOME" ]; then
+    USER_HOME="/home/$USER"
+fi
+
+    # Création du fichier batch dans le dossier personnel
+BATCH_FILE="$USER_HOME/monero_wsl_portforward.bat"
+
+    
+    info "$(get_message "Création du fichier batch dans votre dossier personnel: $BATCH_FILE" "Creating batch file in your home directory: $BATCH_FILE")"
+    
+    cat > "$BATCH_FILE" << 'EOL'
+@echo off
+color 0A
+title Monero WSL Port Forwarding
+
+echo =============================================
+echo    MONERO WSL2 PORT FORWARDING CONFIGURATOR
+echo =============================================
+echo.
+
+REM Empêcher la fermeture de la fenêtre
+if not "%1"=="keepopen" (
+    start cmd /k "%~f0" keepopen
+    exit
+)
+
+echo Tentative d'obtention de l'adresse IP WSL2...
+wsl -e sh -c "hostname -I | cut -d' ' -f1" > %TEMP%\wsl_ip.txt
+
+set /p WSL_IP=<%TEMP%\wsl_ip.txt
+if "%WSL_IP%"=="" (
+    color 0C
+    echo ERREUR: Impossible d'obtenir l'adresse IP WSL2 automatiquement.
+    echo.
+    echo Veuillez entrer l'adresse IP manuellement.
+    echo.
+    echo Pour trouver l'adresse IP WSL2, ouvrez WSL et tapez:
+    echo    ip addr show eth0
+    echo.
+    echo Cherchez une ligne comme: inet 172.xx.xx.xx/20
+    echo.
+    set /p WSL_IP=Adresse IP WSL2: 
+    
+    if "%WSL_IP%"=="" (
+        echo Aucune adresse IP fournie. Configuration annulée.
+        goto end
+    )
+)
+
+color 0A
+echo.
+echo Adresse IP WSL2 trouvée: %WSL_IP%
+echo.
+echo =============================================
+echo Configuration du port forwarding en cours...
+echo =============================================
+
+echo.
+echo 1. Suppression des règles existantes...
+netsh interface portproxy delete v4tov4 listenport=18081 listenaddress=0.0.0.0
+netsh interface portproxy delete v4tov4 listenport=18080 listenaddress=0.0.0.0
+netsh interface portproxy delete v4tov4 listenport=22 listenaddress=0.0.0.0
+
+echo.
+echo 2. Ajout des nouvelles règles...
+netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=18081 connectaddress=%WSL_IP% connectport=18081
+netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=18080 connectaddress=%WSL_IP% connectport=18080
+netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=22 connectaddress=%WSL_IP% connectport=22
+
+echo.
+echo 3. Configuration du pare-feu...
+netsh advfirewall firewall delete rule name="Monero RPC" >nul 2>&1
+netsh advfirewall firewall delete rule name="Monero P2P" >nul 2>&1
+netsh advfirewall firewall add rule name="Monero RPC" dir=in action=allow protocol=TCP localport=18081
+netsh advfirewall firewall add rule name="Monero P2P" dir=in action=allow protocol=TCP localport=18080
+netsh advfirewall firewall add rule name="SSH" dir=in action=allow protocol=TCP localport=22
+
+echo.
+echo =============================================
+echo     CONFIGURATION TERMINÉE AVEC SUCCÈS!
+echo =============================================
+echo.
+echo Votre noeud Monero WSL2 est maintenant accessible via:
+echo    http://VOTRE_ADRESSE_IP_WINDOWS:18081
+echo.
+echo Vérification des règles de port forwarding:
+netsh interface portproxy show v4tov4
+echo.
+echo NOTE: Après chaque redémarrage de WSL, vous devrez 
+echo       exécuter ce script à nouveau.
+echo.
+
+:end
+echo Appuyez sur une touche pour quitter...
+pause > nul
+exit
+EOL
+
+ # S'assurer que le fichier appartient à l'utilisateur
+    if [ -n "$SUDO_USER" ]; then
+        chown "$SUDO_USER:$SUDO_USER" "$BATCH_FILE"
+    fi
+
+    chmod +x "$BATCH_FILE"
+    
+    success "$(get_message "Script de port forwarding créé: $BATCH_FILE" "Port forwarding script created: $BATCH_FILE")"
+    
+    print_styled "WARNING" "$(get_message "IMPORTANT: Pour utiliser ce fichier, vous devez:" "IMPORTANT: To use this file, you must:")"
+    print_styled "PRIMARY" "$(get_message "1. Copiez le fichier monero_wsl_portforward.bat sur votre bureau Windows" "1. Copy the file monero_wsl_portforward.bat to your Windows desktop")"
+    print_styled "PRIMARY" "$(get_message "2. Faire un clic droit sur le fichier sur votre bureau et sélectionner 'Exécuter en tant qu'administrateur'" "2. Right-click on the file on your desktop and select 'Run as administrator'")"
+    print_styled "PRIMARY" "$(get_message "3. Suivre les instructions dans la fenêtre qui s'ouvre" "3. Follow the instructions in the window that opens")"
+    echo ""
+    print_styled "INFO" "$(get_message "Cette étape est nécessaire pour permettre l'accès à votre nœud Monero depuis d'autres PC" "This step is necessary to allow access to your Monero node from other PCs")"
+
+    read -p "$(print_styled "PRIMARY" "$(get_message "Appuyez sur Entrée pour continuer..." "Press Enter to continue...")")"
+    return 0
+}
+
+# Configuration automatique du port forwarding WSL2
+configure_wsl_port_forwarding() {
+    local WSL_IP=$(ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
+    
+    if [ -n "$WSL_IP" ]; then
+        info "$(get_message "Configuration de l'accès distant..." "Configuring remote access...")"
+        
+        # Créer le fichier batch
+        cat > "/tmp/setup_ports.bat" << EOF
+@echo off
+title Configuration Monero WSL2 - Complet
+color 0A
+echo ==========================================
+echo    Configuration des ports Monero WSL2
+echo         (Accès local + externe)
+echo ==========================================
+echo.
+echo Adresse IP WSL2: ${WSL_IP}
+echo.
+
+REM Supprimer les anciennes règles
+echo 1/6 - Suppression des anciennes règles...
+netsh interface portproxy delete v4tov4 listenport=18081 2>nul
+netsh interface portproxy delete v4tov4 listenport=18080 2>nul
+
+REM Ajouter les règles portproxy (Solution 1)
+echo 2/6 - Configuration du port forwarding...
+netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=18081 connectaddress=${WSL_IP} connectport=18081
+netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=18080 connectaddress=${WSL_IP} connectport=18080
+
+REM Configuration du pare-feu
+echo 3/6 - Configuration du pare-feu Windows...
+netsh advfirewall firewall delete rule name="Monero RPC" 2>nul
+netsh advfirewall firewall delete rule name="Monero P2P" 2>nul
+netsh advfirewall firewall add rule name="Monero RPC" dir=in action=allow protocol=TCP localport=18081 remoteip=localsubnet
+netsh advfirewall firewall add rule name="Monero P2P" dir=in action=allow protocol=TCP localport=18080 remoteip=localsubnet
+
+REM Ajouter les règles de routage (Solution 2)
+echo 4/6 - Configuration du routage réseau...
+REM Supprimer les anciennes routes si elles existent
+route delete 0.0.0.0 2>nul
+REM Ajouter la nouvelle route par défaut via WSL2
+route add 0.0.0.0 mask 0.0.0.0 ${WSL_IP} metric 300 if interface 2>nul
+
+REM Obtenir l'IP Windows
+echo 5/6 - Détection de l'IP Windows...
+for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr IPv4 ^| findstr 192.168') do set WINDOWS_IP=%%a
+if "%WINDOWS_IP%"=="" for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr IPv4') do set WINDOWS_IP=%%a
+set WINDOWS_IP=%WINDOWS_IP: =%
+
+echo.
+echo 6/6 - Verification...
+echo ==============================================
+echo     CONFIGURATION TERMINEE !
+echo ==============================================
+echo.
+echo Votre noeud est accessible depuis:
+echo  - Ce PC: http://localhost:18081
+echo  - Autres PC (LAN): http://%WINDOWS_IP%:18081
+echo  - API test: http://%WINDOWS_IP%:18081/get_height
+echo.
+echo Règles de port forwarding actuelles:
+netsh interface portproxy show v4tov4
+echo.
+echo Si l'accès externe ne fonctionne pas, configurez 
+echo votre box/routeur pour rediriger le port 18081
+echo vers %WINDOWS_IP%
+echo.
+pause
+EOF
+        
+        # Définir plusieurs chemins possibles avec USERNAME réel
+        if [ -n "$SUDO_USER" ]; then
+            USERNAME_WSL="$SUDO_USER"
+        else
+            USERNAME_WSL=$(whoami)
+        fi
+        
+        # Options de destination en ordre de préférence
+        DEST_PATHS=(
+            "/mnt/c/Users/$USERNAME_WSL/Desktop/setup_monero_ports.bat"          # Bureau
+            "/mnt/c/Users/$USERNAME_WSL/Downloads/setup_monero_ports.bat"        # Téléchargements
+            "/mnt/c/Users/$USERNAME_WSL/setup_monero_ports.bat"                  # Dossier personnel
+            "/mnt/c/Users/Public/Desktop/setup_monero_ports.bat"                 # Bureau public
+            "/home/$USERNAME_WSL/setup_monero_ports.bat"                         # Dossier home Ubuntu
+        )
+        
+        # Essayer chaque destination
+        for dest in "${DEST_PATHS[@]}"; do
+            if cp "/tmp/setup_ports.bat" "$dest" 2>/dev/null; then
+                case "$dest" in
+                    *Desktop*)
+                        success "$(get_message "Fichier créé sur le bureau Windows" "File created on Windows desktop")"
+                        ;;
+                    *Downloads*)
+                        success "$(get_message "Fichier créé dans Téléchargements" "File created in Downloads")"
+                        ;;
+                    */home/*)
+                        success "$(get_message "Fichier créé dans le dossier Ubuntu: $dest" "File created in Ubuntu folder: $dest")"
+                        ;;
+                    *)
+                        success "$(get_message "Fichier créé dans: $dest" "File created in: $dest")"
+                        ;;
+                esac
+                CREATED_FILE="$dest"
+                break
+            fi
+        done
+        
+        # Si aucun chemin n'a fonctionné, utiliser un message d'erreur plus clair
+        if [ -z "$CREATED_FILE" ]; then
+            error "$(get_message "Impossible de créer le fichier dans un emplacement accessible" "Unable to create file in accessible location")"
+            info "$(get_message "Le fichier est disponible dans WSL à: /tmp/setup_ports.bat" "File is available in WSL at: /tmp/setup_ports.bat")"
+        fi
+        echo
+        warning "$(get_message "ÉTAPE MANUELLE REQUISE:" "MANUAL STEP REQUIRED:")"
+        if [[ "$CREATED_FILE" == *"Desktop"* ]]; then
+            print_styled "HEADER" "$(get_message "1. Allez sur votre bureau Windows" "1. Go to your Windows desktop")"
+        elif [[ "$CREATED_FILE" == *"Downloads"* ]]; then
+            print_styled "HEADER" "$(get_message "1. Allez dans votre dossier Téléchargements" "1. Go to your Downloads folder")"
+        else
+            print_styled "HEADER" "$(get_message "1. Ouvrez l'Explorateur et cherchez le fichier" "1. Open Explorer and look for the file")"
+        fi
+        print_styled "HEADER" "$(get_message "2. Clic droit et ouvrir en administrateur sur 'setup_monero_ports.bat'" "2. Right click and open as administrator on 'setup_monero_ports.bat'")"
+        print_styled "HEADER" "$(get_message "3. Confirmez l'élévation UAC si demandé" "3. Confirm UAC elevation if prompted")"
+        print_styled "HEADER" "$(get_message "4. Vous pourrez accéder via un autre pc en local" "3. You will be able to access via another PC locally")"
+        print_styled "HEADER" "$(get_message "5. ex: Avec en mode 'distant' monero gui 192.168.1.X, port 18081" "5. eg: With monero gui in 'distant' mode 192.168.1.X, port 18081")"
+        echo
+        
+    fi
+}
+
+
+# Fonction pour corriger les problèmes systemd
+fix_systemd_services() {
+    print_header "$(get_message "RÉPARATION SYSTEMD" "SYSTEMD FIX")"
+    
+    info "$(get_message "Début de la correction des problèmes systemd..." "Starting systemd issues fix...")"
+    
+    # Étape 1: Vérifier si systemd est le processus PID 1
+    info "$(get_message "Vérification de systemd comme PID 1..." "Checking if systemd is running as PID 1...")"
+    if ! ps -p 1 -o comm= | grep -q systemd; then
+        error "$(get_message "systemd n'est pas en cours d'exécution comme PID 1" "systemd is not running as PID 1")"
+        info "$(get_message "Configuration du fichier wsl.conf pour activer systemd" "Configuring wsl.conf to enable systemd")"
+        
+        sudo mkdir -p /etc/
+        cat << EOF | sudo tee /etc/wsl.conf > /dev/null
+[boot]
+systemd=true
+
+[automount]
+enabled=true
+mountFsTab=false
+
+[network]
+generateHosts=true
+generateResolvConf=false
+EOF
+        
+        success "$(get_message "Configuration de wsl.conf terminée" "wsl.conf configuration completed")"
+        warning "$(get_message "Vous devez redémarrer WSL avec 'wsl --shutdown' depuis PowerShell" "You need to restart WSL with 'wsl --shutdown' from PowerShell")"
+        warning "$(get_message "Après redémarrage, exécutez à nouveau cette option" "After restart, run this option again")"
+        read -p "$(print_styled "PRIMARY" "$(get_message "Appuyez sur Entrée pour continuer..." "Press Enter to continue...")")"
+        return 1
+    else
+        success "$(get_message "systemd fonctionne correctement comme PID 1" "systemd is running correctly as PID 1")"
+    fi
+
+    # Étape 2: Désactivation temporaire des services problématiques
+    info "$(get_message "Arrêt des services problématiques..." "Stopping problematic services...")"
+    sudo systemctl stop fail2ban.service tor.service 2>/dev/null || true
+    sudo systemctl disable fail2ban.service tor.service 2>/dev/null || true
+
+    # Étape 3: Correction du problème de montage fstab
+    info "$(get_message "Correction du problème de montage fstab..." "Fixing fstab mounting issue...")"
+    if [ -f /etc/fstab ]; then
+        sudo mv /etc/fstab /etc/fstab.bak
+        success "$(get_message "Sauvegarde de l'ancien fstab dans /etc/fstab.bak" "Backup of old fstab in /etc/fstab.bak")"
+    fi
+
+    # Créer un fichier fstab minimal
+    cat << EOF | sudo tee /etc/fstab > /dev/null
+# /etc/fstab: static file system information.
+# Use 'blkid' to print the universally unique identifier for a device.
+proc /proc proc defaults 0 0
+EOF
+
+    # Étape 4: Correction des services problématiques
+    info "$(get_message "Création des overrides pour les services problématiques..." "Creating overrides for problematic services...")"
+
+    # Correction pour fail2ban
+    sudo mkdir -p /etc/systemd/system/fail2ban.service.d/
+    cat << EOF | sudo tee /etc/systemd/system/fail2ban.service.d/override.conf > /dev/null
+[Service]
+Type=simple
+ExecStartPre=
+Restart=on-failure
+RestartSec=5s
+EOF
+
+    # Correction pour tor
+    sudo mkdir -p /etc/systemd/system/tor.service.d/
+    cat << EOF | sudo tee /etc/systemd/system/tor.service.d/override.conf > /dev/null
+[Service]
+Type=simple
+ExecStartPre=
+Restart=on-failure
+RestartSec=5s
+EOF
+
+    # S'assurer que les permissions de tor sont correctes
+    info "$(get_message "Configuration des permissions pour tor..." "Setting up permissions for tor...")"
+    sudo mkdir -p /var/lib/tor
+    sudo mkdir -p /var/lib/tor/ssh
+    sudo mkdir -p /var/lib/tor/monero-service
+    sudo chown -R debian-tor:debian-tor /var/lib/tor 2>/dev/null || true
+    sudo chmod 700 /var/lib/tor
+    sudo chmod 700 /var/lib/tor/ssh
+    sudo chmod 700 /var/lib/tor/monero-service
+
+    # Étape 5: Recharger systemd et redémarrer les services
+    info "$(get_message "Rechargement de systemd..." "Reloading systemd...")"
+    sudo systemctl daemon-reload
+    sudo systemctl reset-failed
+
+    info "$(get_message "Démarrage des services..." "Starting services...")"
+    if sudo systemctl restart fail2ban.service; then
+        success "$(get_message "fail2ban démarré avec succès" "fail2ban started successfully")"
+    else
+        warning "$(get_message "Échec du démarrage de fail2ban" "Failed to start fail2ban")"
+    fi
+    
+    if sudo systemctl restart tor.service; then
+        success "$(get_message "tor démarré avec succès" "tor started successfully")"
+    else
+        warning "$(get_message "Échec du démarrage de tor" "Failed to start tor")"
+    fi
+
+    # Étape 6: Vérification finale
+    info "$(get_message "Vérification de l'état des services..." "Checking services status...")"
+    echo "----- fail2ban -----"
+    sudo systemctl status fail2ban.service --no-pager || true
+    echo "----- tor -----"
+    sudo systemctl status tor.service --no-pager || true
+
+    info "$(get_message "Services en échec :" "Failed services:")"
+    if sudo systemctl --failed | grep -E 'fail2ban|tor|mount'; then
+        warning "$(get_message "Des services sont toujours en échec" "Some services are still failing")"
+    else
+        success "$(get_message "Aucun service en échec détecté" "No failed services detected")"
+    fi
+
+    success "$(get_message "Script de correction terminé" "Fix script completed")"
+    
+    read -p "$(print_styled "PRIMARY" "$(get_message "Appuyez sur Entrée pour continuer..." "Press Enter to continue...")")"
+}
+# Fonction pour corriger les problèmes systemd demarrage auto
+fix_systemd_services_auto() {
+    print_header "$(get_message "RÉPARATION SYSTEMD" "SYSTEMD FIX")"
+    
+    info "$(get_message "Début de la correction des problèmes systemd..." "Starting systemd issues fix...")"
+    
+    # Étape 1: Vérifier si systemd est le processus PID 1
+    info "$(get_message "Vérification de systemd comme PID 1..." "Checking if systemd is running as PID 1...")"
+    if ! ps -p 1 -o comm= | grep -q systemd; then
+        error "$(get_message "systemd n'est pas en cours d'exécution comme PID 1" "systemd is not running as PID 1")"
+        info "$(get_message "Configuration du fichier wsl.conf pour activer systemd" "Configuring wsl.conf to enable systemd")"
+        
+        sudo mkdir -p /etc/
+        cat << EOF | sudo tee /etc/wsl.conf > /dev/null
+[boot]
+systemd=true
+
+[automount]
+enabled=true
+mountFsTab=false
+
+[network]
+generateHosts=true
+generateResolvConf=true
+EOF
+        
+        success "$(get_message "Configuration de wsl.conf terminée" "wsl.conf configuration completed")"
+        warning "$(get_message "Vous devez redémarrer WSL avec 'wsl --shutdown' depuis PowerShell" "You need to restart WSL with 'wsl --shutdown' from PowerShell")"
+        warning "$(get_message "Après redémarrage, exécutez à nouveau cette option" "After restart, run this option again")"
+        read -p "$(print_styled "PRIMARY" "$(get_message "Appuyez sur Entrée pour continuer..." "Press Enter to continue...")")"
+        return 1
+    else
+        success "$(get_message "systemd fonctionne correctement comme PID 1" "systemd is running correctly as PID 1")"
+    fi
+
+    # Étape 2: Désactivation temporaire des services problématiques
+    info "$(get_message "Arrêt des services problématiques..." "Stopping problematic services...")"
+    sudo systemctl stop fail2ban.service tor.service 2>/dev/null || true
+    sudo systemctl disable fail2ban.service tor.service 2>/dev/null || true
+
+    # Étape 3: Correction du problème de montage fstab
+    info "$(get_message "Correction du problème de montage fstab..." "Fixing fstab mounting issue...")"
+    if [ -f /etc/fstab ]; then
+        sudo mv /etc/fstab /etc/fstab.bak
+        success "$(get_message "Sauvegarde de l'ancien fstab dans /etc/fstab.bak" "Backup of old fstab in /etc/fstab.bak")"
+    fi
+
+    # Créer un fichier fstab minimal
+    cat << EOF | sudo tee /etc/fstab > /dev/null
+# /etc/fstab: static file system information.
+# Use 'blkid' to print the universally unique identifier for a device.
+proc /proc proc defaults 0 0
+EOF
+
+    # Étape 4: Correction des services problématiques
+    info "$(get_message "Création des overrides pour les services problématiques..." "Creating overrides for problematic services...")"
+
+    # Correction pour fail2ban
+    sudo mkdir -p /etc/systemd/system/fail2ban.service.d/
+    cat << EOF | sudo tee /etc/systemd/system/fail2ban.service.d/override.conf > /dev/null
+[Service]
+Type=simple
+ExecStartPre=
+Restart=on-failure
+RestartSec=5s
+EOF
+
+    # Correction pour tor
+    sudo mkdir -p /etc/systemd/system/tor.service.d/
+    cat << EOF | sudo tee /etc/systemd/system/tor.service.d/override.conf > /dev/null
+[Service]
+Type=simple
+ExecStartPre=
+Restart=on-failure
+RestartSec=5s
+EOF
+
+    # S'assurer que les permissions de tor sont correctes
+    info "$(get_message "Configuration des permissions pour tor..." "Setting up permissions for tor...")"
+    sudo mkdir -p /var/lib/tor
+    sudo mkdir -p /var/lib/tor/ssh
+    sudo mkdir -p /var/lib/tor/monero-service
+    sudo chown -R debian-tor:debian-tor /var/lib/tor 2>/dev/null || true
+    sudo chmod 700 /var/lib/tor
+    sudo chmod 700 /var/lib/tor/ssh
+    sudo chmod 700 /var/lib/tor/monero-service
+
+    # Étape 5: Recharger systemd et redémarrer les services
+    info "$(get_message "Rechargement de systemd..." "Reloading systemd...")"
+    sudo systemctl daemon-reload
+    sudo systemctl reset-failed
+
+    info "$(get_message "Démarrage des services..." "Starting services...")"
+    if sudo systemctl restart fail2ban.service; then
+        success "$(get_message "fail2ban démarré avec succès" "fail2ban started successfully")"
+    else
+        warning "$(get_message "Échec du démarrage de fail2ban" "Failed to start fail2ban")"
+    fi
+    
+    if sudo systemctl restart tor.service; then
+        success "$(get_message "tor démarré avec succès" "tor started successfully")"
+    else
+        warning "$(get_message "Échec du démarrage de tor" "Failed to start tor")"
+    fi
+
+    # Étape 6: Vérification finale
+    info "$(get_message "Vérification de l'état des services..." "Checking services status...")"
+    echo "----- fail2ban -----"
+    sudo systemctl status fail2ban.service --no-pager || true
+    echo "----- tor -----"
+    sudo systemctl status tor.service --no-pager || true
+
+    info "$(get_message "Services en échec :" "Failed services:")"
+    if sudo systemctl --failed | grep -E 'fail2ban|tor|mount'; then
+        warning "$(get_message "Des services sont toujours en échec" "Some services are still failing")"
+    else
+        success "$(get_message "Aucun service en échec détecté" "No failed services detected")"
+    fi
+
+    success "$(get_message "Script de correction terminé" "Fix script completed")"
+    
+  }
+
+# Fonction pour réparer spécifiquement le service Tor
+fix_tor_service() {
+    # Vérifier si Tor est installé
+    if ! command -v tor &> /dev/null; then
+        return 0  # Si Tor n'est pas installé, on ne fait rien
+    fi
+    
+    # Vérifier et créer les répertoires nécessaires
+    sudo mkdir -p /var/lib/tor/ssh/ 2>/dev/null
+    sudo mkdir -p /var/lib/tor/monero-service/ 2>/dev/null
+    
+    # Corriger les permissions
+    if getent passwd debian-tor > /dev/null; then
+        sudo chown -R debian-tor:debian-tor /var/lib/tor 2>/dev/null
+        sudo chmod 700 /var/lib/tor 2>/dev/null
+        sudo chmod 700 /var/lib/tor/ssh 2>/dev/null
+        sudo chmod 700 /var/lib/tor/monero-service 2>/dev/null
+    fi
+    
+    # Corriger la configuration si nécessaire
+    if [ ! -f /etc/tor/torrc ] || ! grep -q "monero-service" /etc/tor/torrc 2>/dev/null; then
+        # Sauvegarder la configuration existante
+        if [ -f /etc/tor/torrc ]; then
+            sudo cp /etc/tor/torrc /etc/tor/torrc.backup 2>/dev/null
+        fi
+        
+        # Écrire une configuration minimale
+        {
+            echo "SOCKSPort 9050"
+            echo "ControlPort 9051"
+            echo "HiddenServiceDir /var/lib/tor/ssh/"
+            echo "HiddenServicePort 22 127.0.0.1:22"
+            echo "HiddenServiceDir /var/lib/tor/monero-service/"
+            echo "HiddenServicePort 18081 127.0.0.1:18081"
+        } | sudo tee /etc/tor/torrc > /dev/null 2>&1
+    fi
+    
+    # Créer l'override systemd si nécessaire
+    sudo mkdir -p /etc/systemd/system/tor.service.d/ 2>/dev/null
+    cat << EOF | sudo tee /etc/systemd/system/tor.service.d/override.conf > /dev/null 2>&1
+[Service]
+Type=simple
+ExecStartPre=
+Restart=on-failure
+RestartSec=5s
+EOF
+    
+    # Recharger systemd et redémarrer Tor silencieusement
+    sudo systemctl daemon-reload 2>/dev/null
+    sudo systemctl reset-failed tor.service 2>/dev/null
+    sudo systemctl restart tor.service 2>/dev/null
+    
+    # Attendre que le service démarre
+    sleep 3
+    
+    # Vérifier si le service est actif en silence
+    if ! systemctl is-active --quiet tor.service 2>/dev/null; then
+        # Si le service ne démarre toujours pas, essayer une approche différente
+        sudo killall -9 tor 2>/dev/null || true
+        sleep 1
+        sudo tor > /dev/null 2>&1 &
+    fi
+}
+
+# Menu principal
+show_menu() {
+    while true; do
+        setup_terminal
+        echo -e "\n\n"
+        
+        print_styled "PRIMARY" "0) $(get_message "GUIDE" "HOW TO")"
+
+        echo -e "${COLORS[TITLE]}$(get_message "Menu Principal:" "Main Menu:")${COLORS[RESET]}"
+                
+        print_styled "PRIMARY" "1) $(get_message "Mise à jour système" "Update system")"
+        print_styled "PRIMARY" "2) $(get_message "Installer Monero CLI" "Install Monero CLI")"
+        print_styled "PRIMARY" "3) $(get_message "Installer service Tor" "Install Tor")"
+        print_styled "PRIMARY" "4) $(get_message "Configurer bitmonero" "Configure bitmonero")"
+        print_styled "PRIMARY" "5) $(get_message "Configurer DNSSEC anonymes" "Configure anonymous DNS")"
+        
+        echo -e "${COLORS[TITLE]}$(get_message "BLOCKCHAIN" "BLOCKCHAIN")${COLORS[RESET]}"
+        print_styled "PRIMARY" "6) $(get_message "MARCHE" "START")"
+        print_styled "PRIMARY" "7) $(get_message "ARRET= ctrl+c" "STOP= ctrl+c")"
+        
+        echo -e "${COLORS[TITLE]}$(get_message "OPTION du NOEUD sur DISQUE:" "NODE OPTIONS on DISK:")${COLORS[RESET]}"
+        print_styled "PRIMARY" "8) $(get_message "Blockchain sur disque Externe" "Blockchain on External disk")"
+        print_styled "PRIMARY" "9) $(get_message "Blockchain sur disque Interne" "Blockchain on Internal disk")"
+        echo -e "${COLORS[TITLE]}$(get_message "AUTRES OPTIONS" "OTHER OPTIONS")${COLORS[RESET]}"
+        print_styled "PRIMARY" "10) $(get_message "Changer language" "Change language")"
+        print_styled "PRIMARY" "11) $(get_message "INFOS" "FEATURES")"
+        print_styled "PRIMARY" "12) $(get_message "NOTES" "READ")"
+        
+        echo -e "${COLORS[TITLE]}$(get_message "OUTILS" "TOOLS")${COLORS[RESET]}"
+        print_styled "PRIMARY" "13) $(get_message "REPARER acces tor-ssh" "REPAIR remote tor-ssh access")"
+        print_styled "PRIMARY" "14) $(get_message "REPARER acces IP local" "REPAIR remote IP local access")"
+        echo -e "${COLORS[TITLE]}$(get_message "FIN" "END")${COLORS[RESET]}"
+        print_styled "PRIMARY" "15) $(get_message "QUITTER" "EXIT")"
+        
+        echo -n "$(print_styled "INFO" "$(get_message "Choix (1-15): " "Choice (1-15): ")")"
+        read -r choice
+
+        case $choice in
+            0) Manuel ;;
+            1) update_system ;;
+            2) 
+                if ! ask_username; then
+                    continue  # Retourne au menu principal
+                fi
+                
+                if ! install_monero_cli; then
+                    continue  # Retourne au menu principal
+                fi
+                ;;
+            3) install_tor ;;
+            4) 
+                if ! ask_username; then
+                    continue
+                fi
+               
+                if ! configure_monero; then
+                    continue
+                fi
+                ;;
+            5) configure_dns ;;
+            6) 
+                clear
+                setup_terminal
+                echo -e "\n\n"
+                if ! ask_username; then
+                    continue
+                fi
+                if ! select_blockchain_type; then
+                    continue  # Retourne au menu principal
+                fi
+                # Exécuter d'abord l'option 5 (configuration DNS)
+                reparation_dns
+                if ! start_blockchain; then
+                    continue
+                fi
+                ;;
+            7)
+                echo -n "$(print_styled "INFO" "$(get_message "Voulez-vous vraiment arrêter la blockchain? (o/n): " "Do you really want to stop the blockchain? (y/n): ")")"
+                read -r confirm
+                case $confirm in
+                    [OoYy]*)
+                        pkill -f monerod
+                        success "$(get_message "Blockchain arrêtée" "Blockchain stopped")"
+                        ;;
+                esac
+                ;;
+            8) 
+                if ! ask_username; then
+                    continue
+                fi
+                if ! manage_blockchain; then
+                    continue
+                fi 
+                ;;
+            9) unmount_external_disk ;;
+            10) select_language ;;
+            11) show_scripts ;;
+            12) show_notes ;;
+            15)
+                clear
+                setup_terminal
+                echo -e "\n\n\n\n\n\n\n\n"  # Espace pour la bannière
+                print_header "$(get_message "MERCI" "THANK YOU")"
+                
+                echo
+                print_styled "SUCCESS" "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
+                if [ "$LANG_CHOICE" = "FR" ]; then
+                    print_styled "SUCCESS" "┃                                                                             ┃"
+                    print_styled "SUCCESS" "┃  Programme d'aide informatique et de liberté.                               ┃"
+                    print_styled "SUCCESS" "┃  Permet d'installer un nœud MONERO sans aucune connaissance sur Linux.      ┃"
+                    print_styled "SUCCESS" "┃                                                                             ┃"
+                    print_styled "SUCCESS" "┃  Merci d'avoir utilisé ce programme.                                        ┃"
+                    print_styled "SUCCESS" "┃                                                                             ┃"
+                    print_styled "MONERO"  "┃                           🔒 PRIVACY MATTERS 🔒                             ┃"
+                else
+                    print_styled "SUCCESS" "┃                                                                             ┃"
+                    print_styled "SUCCESS" "┃  Computer assistance and freedom program.                                   ┃"
+                    print_styled "SUCCESS" "┃  Helps you install a MONERO node without any knowledge on Linux.            ┃"
+                    print_styled "SUCCESS" "┃                                                                             ┃"
+                    print_styled "SUCCESS" "┃  Thank you for using this program.                                          ┃"
+                    print_styled "SUCCESS" "┃                                                                             ┃"
+                    print_styled "MONERO"  "┃                           🔒 PRIVACY MATTERS 🔒                             ┃"
+                fi
+                print_styled "SUCCESS" "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
+                echo
+                
+                # Pause de 3 secondes avant de quitter
+                sleep 3
+                exit 0
+                ;;
+            13) fix_systemd_services ;;
+            14) configure_wsl_port_forwarding ;;
+            *)
+                error "$(get_message "Option invalide" "Invalid option")"
+                ;;
+        esac
+
+        # Si une erreur survient
+        if [ $? -ne 0 ]; then
+            error "$(get_message "Une erreur est survenue" "An error occurred")"
+            read -p "$(print_styled "PRIMARY" "$(get_message "Appuyez sur Entrée pour continuer..." "Press Enter to continue...")")"
+        fi
+    done
+}
+
+# Point d'entrée du script
+setup_terminal
+select_language
+fix_hostname_resolution
+show_menu
+exit 0
